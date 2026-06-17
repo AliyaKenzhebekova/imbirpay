@@ -89,7 +89,7 @@ const DANGER = '#CF0000';
 
 const USERS = [
   { name: 'Мусина Дина',          position: 'Учредитель',                           role: 'manager' },
-  { name: 'Алия Кенжебекова',     position: 'Финансовый директор',                  role: 'cfo' },
+  { name: 'Алия Кенжебекова',     position: 'Финансовый директор',                  role: 'observer' },
   { name: 'Гульнар Сулейменова',  position: 'Казначей',                             role: 'treasurer' },
   { name: 'Нургуль Казбекова',    position: 'Директор по развитию',                 role: 'initiator' },
   { name: 'Назерке Каребаева',    position: 'Директор по стратегическому развитию', role: 'initiator' },
@@ -120,26 +120,25 @@ const CATEGORIES = [
 const STATUSES = {
   new:      { label: 'Новая',          color: '#4D295D', bg: '#f5f0f8', icon: '🔵' },
   manager:  { label: 'У учредителя',   color: '#8f7033', bg: '#f8f4eb', icon: '👔' },
-  cfo:      { label: 'У финдиректора', color: '#8f7033', bg: '#f8f4eb', icon: '💼' },
   approved: { label: 'Одобрено',       color: '#1B7A4A', bg: '#e8f5ed', icon: '✅' },
   paid:     { label: 'Оплачено',       color: '#1A4DAB', bg: '#e8eff9', icon: '💳' },
   rejected: { label: 'Отклонено',      color: '#CF0000', bg: '#fff0f0', icon: '❌' },
+  blocked:  { label: 'Заблокировано',  color: '#7a1000', bg: '#fff0f0', icon: '🔒' },
 };
 
 const CHAIN = [
-  { key: 'cfo',      name: 'Алия Кенжебекова',   title: 'Финансовый директор', step: '1-е согласование' },
-  { key: 'manager',  name: 'Мусина Дина',         title: 'Учредитель',          step: '2-е согласование' },
-  { key: 'treasurer',name: 'Гульнар Сулейменова', title: 'Казначей',            step: 'Исполнение оплаты' },
+  { key: 'manager',  name: 'Мусина Дина',         title: 'Учредитель',  step: 'Согласование' },
+  { key: 'treasurer',name: 'Гульнар Сулейменова', title: 'Казначей',    step: 'Исполнение оплаты' },
 ];
 
 const PRIORITY_LABELS = { planned: 'Плановая', standard: 'Стандарт', urgent: 'Срочно' };
 const PRIORITY_STEPS = ['planned', 'standard', 'urgent'];
 
-const STATUS_FLOW = ['new', 'cfo', 'manager', 'approved', 'paid'];
+const STATUS_FLOW = ['new', 'manager', 'approved', 'paid'];
 
 // Строгие зоны ответственности: роль → статус на котором она действует
-const ROLE_STAGE = { cfo: 'cfo', manager: 'manager', treasurer: 'approved' };
-const canActOn = (userRole, reqStatus) => ROLE_STAGE[userRole] === reqStatus;
+const ROLE_STAGE = { manager: 'manager', treasurer: 'approved' };
+const canActOn = (userRole, reqStatus, req) => ROLE_STAGE[userRole] === reqStatus && (req ? req.status !== 'blocked' : reqStatus !== 'blocked');
 
 // Пользователи по умолчанию во всех филиалах
 const ALL_BRANCH_USERS = ['Нургуль Казбекова', 'Назерке Каребаева'];
@@ -183,7 +182,6 @@ const sendWhatsApp = (phone, apikey, text) => {
 const buildWAMsg = (req, event, extra='') => {
   const header = {
     new:      '🆕 Новая заявка',
-    cfo:      '📋 На согласование (финдир.)',
     manager:  '📋 На согласование (учредитель)',
     approved: '✅ Готово к оплате',
     paid:     '💳 Заявка оплачена',
@@ -209,12 +207,8 @@ const dispatchWANotifications = (req, prevStatus, waContacts) => {
     const c = get(name);
     if (c?.phone && c?.apikey) sendWhatsApp(c.phone, c.apikey, buildWAMsg(req, event, extra));
   };
-  // Новая заявка → Финдиректору
-  if (!prevStatus || (prevStatus === 'new' && req.status === 'cfo')) {
-    notify('Алия Кенжебекова', 'cfo', '⏳ Ожидает вашего согласования');
-  }
-  // Финдир одобрил → Учредителю
-  if (prevStatus === 'cfo' && req.status === 'manager') {
+  // Новая заявка → Учредителю
+  if (!prevStatus || (prevStatus === 'new' && req.status === 'manager')) {
     notify('Мусина Дина', 'manager', '⏳ Ожидает вашего согласования');
   }
   // Учредитель одобрил → Казначею
@@ -326,7 +320,7 @@ const SEED = [
     periodFrom:'2026-06-01', periodTo:'2026-06-10',
     amount:85000, dueDate:'2026-06-01', priority:'standard',
     purpose:'Командировочные расходы Алматы–Павлодар. Проведение собеседований.',
-    status:'cfo', createdAt:'2026-05-29T09:00:00Z', isDup:false, treasuryComment:'',
+    status:'manager', createdAt:'2026-05-29T09:00:00Z', isDup:false, treasuryComment:'',
     history:[
       {date:'2026-05-29T09:00:00Z', actor:'Мухтар Нургалиев', action:'Заявка создана', comment:''},
       {date:'2026-05-29T09:01:00Z', actor:'Система', action:'Направлена финдиректору (1-е согласование)', comment:''},
@@ -746,8 +740,8 @@ function LoginPage({ onLogin, settings, passwords }) {
 //
 
 function TopBar({ user, activeTab, setActiveTab, onLogout, onChangePassword }) {
-  const isManagement = ['manager','cfo','treasurer'].includes(user.role);
-  const roleLabel = { manager:'Руководитель', cfo:'Финансовый директор', treasurer:'Казначей', initiator:'Инициатор' }[user.role];
+  const isManagement = ['manager','observer','treasurer'].includes(user.role);
+  const roleLabel = { manager:'Учредитель', observer:'Финансовый директор', treasurer:'Казначей', initiator:'Инициатор' }[user.role];
 
   return (
     <header className="sticky top-0 z-30" style={{background:'#4D295D', borderBottom:'1px solid rgba(182,146,68,0.3)'}}>
@@ -830,19 +824,19 @@ function KPICards({ requests, filter, setFilter }) {
   const stats = useMemo(() => ({
     new:      requests.filter(r=>r.status==='new'),
     manager:  requests.filter(r=>r.status==='manager'),
-    cfo:      requests.filter(r=>r.status==='cfo'),
     approved: requests.filter(r=>r.status==='approved'),
     paid:     requests.filter(r=>r.status==='paid'),
     rejected: requests.filter(r=>r.status==='rejected'),
+    blocked:  requests.filter(r=>r.status==='blocked'),
   }), [requests]);
 
   const cards = [
     { key:'new',      label:'Новые',          icon:'🔵', activeColor:'#4D295D', activeBg:'#f5f0f8' },
-    { key:'cfo',      label:'У финдиректора', icon:'💼', activeColor:'#8f7033', activeBg:'#f8f4eb' },
     { key:'manager',  label:'У учредителя',   icon:'👔', activeColor:'#8f7033', activeBg:'#f8f4eb' },
     { key:'approved', label:'Одобрено',        icon:'✅', activeColor:'#1B7A4A', activeBg:'#e8f5ed' },
     { key:'paid',     label:'Оплачено',        icon:'💳', activeColor:'#1A4DAB', activeBg:'#e8eff9' },
     { key:'rejected', label:'Отклонено',       icon:'❌', activeColor:'#CF0000', activeBg:'#fff0f0' },
+    { key:'blocked',  label:'Заблокировано',   icon:'🔒', activeColor:'#7a1000', activeBg:'#fff0f0' },
   ];
 
   return (
@@ -868,10 +862,10 @@ function KPICards({ requests, filter, setFilter }) {
 //
 
 function PipelineBar({ requests }) {
-  const statuses = ['new','cfo','manager','approved','paid'];
+  const statuses = ['new','manager','approved','paid'];
   const counts = Object.fromEntries(statuses.map(s=>[s, requests.filter(r=>r.status===s).length]));
-  const labels = { new:'Новые', cfo:'У финдиректора', manager:'У учредителя', approved:'Одобрено', paid:'Оплачено' };
-  const colors  = { new:'#4D295D', cfo:'#B69244', manager:'#B69244', approved:'#1B7A4A', paid:'#1A4DAB' };
+  const labels = { new:'Новые', manager:'У учредителя', approved:'Одобрено', paid:'Оплачено' };
+  const colors  = { new:'#4D295D', manager:'#B69244', approved:'#1B7A4A', paid:'#1A4DAB' };
 
   return (
     <div className="card p-4 mb-6 flex items-center gap-2 overflow-x-auto">
@@ -905,13 +899,12 @@ function FilterBar({ filter, setFilter, search, setSearch, onExportCSV, selected
   const tabs = [
     {key:'all', label:'Все'},
     {key:'new', label:'Новые'},
-    {key:'manager', label:'У руководителя'},
-    {key:'cfo', label:'У финдиректора'},
+    {key:'manager', label:'У учредителя'},
     {key:'approved', label:'Одобрено'},
     {key:'paid', label:'Оплачено'},
     {key:'rejected', label:'Отклонено'},
   ];
-  const isManagement = ['manager','cfo','treasurer'].includes(user.role);
+  const isManagement = ['manager','observer','treasurer'].includes(user.role);
 
   return (
     <div className="space-y-3 mb-4">
@@ -955,7 +948,7 @@ function FilterBar({ filter, setFilter, search, setSearch, onExportCSV, selected
 //
 
 function RequestsTable({ requests, onSelectRow, selectedIds, onToggleSelect, onToggleAll, onQuickApprove, onQuickReject, user }) {
-  const isManagement = ['manager','cfo','treasurer'].includes(user.role);
+  const isManagement = ['manager','observer','treasurer'].includes(user.role);
   const allChecked = requests.length > 0 && requests.every(r => selectedIds.includes(r.id));
 
   if (!requests.length) {
@@ -1051,7 +1044,7 @@ function RequestsTable({ requests, onSelectRow, selectedIds, onToggleSelect, onT
                 {isManagement && (
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1 justify-center" onClick={e=>e.stopPropagation()}>
-                      {canActOn(user.role, req.status) && (
+                      {canActOn(user.role, req.status, req) && (
                         <>
                           <button onClick={()=>onQuickApprove(req)}
                                   className="w-8 h-8 rounded-lg bg-green-50 text-green-600 flex items-center justify-center hover:bg-green-100 text-sm font-bold"
@@ -1088,7 +1081,7 @@ function RequestsTable({ requests, onSelectRow, selectedIds, onToggleSelect, onT
 function ApprovalChainView({ req }) {
   const getStepStatus = (chainKey) => {
     const flowIdx = STATUS_FLOW.indexOf(req.status);
-    const chainMap = { cfo:1, manager:2, treasurer:3 };
+    const chainMap = { manager:1, treasurer:2 };
     const stepIdx = chainMap[chainKey];
     if (req.status === 'rejected') return 'rejected';
     if (flowIdx > stepIdx) return 'done';
@@ -1097,7 +1090,7 @@ function ApprovalChainView({ req }) {
   };
 
   const historyFor = (chainKey) => {
-    const actionWords = { cfo:['Одобрено (1-е','Отклонено'], manager:['Одобрено (2-е','Отклонено'], treasurer:['Оплачено','Отклонено'] };
+    const actionWords = { manager:['Одобрено','Отклонено'], treasurer:['Оплачено','Отклонено'] };
     const words = actionWords[chainKey] || [];
     return req.history.filter(h => words.some(w=>h.action.includes(w)));
   };
@@ -1139,14 +1132,16 @@ function ApprovalChainView({ req }) {
   );
 }
 
-function Drawer({ req, onClose, onApprove, onReject, user, onUpdateComment }) {
+function Drawer({ req, onClose, onApprove, onReject, onBlock, user, onUpdateComment }) {
   const [comment, setComment] = useState(req.treasuryComment || '');
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectForm, setShowRejectForm] = useState(false);
-  const isManagement = ['manager','cfo','treasurer'].includes(user.role);
-  const canAct = canActOn(user.role, req.status);
+  const isManagement = ['manager','observer','treasurer'].includes(user.role);
+  const canAct = canActOn(user.role, req.status, req);
   const isPayAction = user.role === 'treasurer';
   const approveLabel = isPayAction ? '💳 Оплатить' : '✅ Одобрить';
+  const canBlock = user.name === 'Алия Кенжебекова';
+  const isBlocked = req.status === 'blocked';
 
   const doApprove = () => {
     onUpdateComment(req.id, comment);
@@ -1159,6 +1154,29 @@ function Drawer({ req, onClose, onApprove, onReject, user, onUpdateComment }) {
     onUpdateComment(req.id, comment);
     onReject(req, user.name, rejectReason);
     onClose();
+  };
+
+  const doBlock = () => {
+    onBlock(req, isBlocked ? 'unblock' : 'block', user.name);
+    onClose();
+  };
+
+  const openFile = () => {
+    if (!req.fileData) return;
+    try {
+      const win = window.open('', '_blank');
+      if (req.fileData.startsWith('data:application/pdf')) {
+        win.document.write(`<html><body style="margin:0"><iframe src="${req.fileData}" style="width:100%;height:100vh;border:none"></iframe></body></html>`);
+      } else {
+        win.document.write(`<html><body style="margin:0;background:#111;display:flex;align-items:center;justify-content:center;min-height:100vh"><img src="${req.fileData}" style="max-width:100%;max-height:100vh"/></body></html>`);
+      }
+      win.document.close();
+    } catch(e) {
+      const a = document.createElement('a');
+      a.href = req.fileData;
+      a.download = req.fileName || 'file';
+      a.click();
+    }
   };
 
   return (
@@ -1218,10 +1236,10 @@ function Drawer({ req, onClose, onApprove, onReject, user, onUpdateComment }) {
                   <div className="text-xs text-blue-500">Загружен инициатором</div>
                 </div>
                 {req.fileData ? (
-                  <a href={req.fileData} target="_blank" rel="noopener noreferrer"
-                     className="flex-shrink-0 btn-outline text-xs py-1.5 px-3 no-underline">
+                  <button onClick={openFile}
+                     className="flex-shrink-0 btn-outline text-xs py-1.5 px-3">
                     👁 Открыть
-                  </a>
+                  </button>
                 ) : (
                   <span className="text-xs text-blue-300 flex-shrink-0">предпросмотр недоступен</span>
                 )}
@@ -1297,6 +1315,24 @@ function Drawer({ req, onClose, onApprove, onReject, user, onUpdateComment }) {
             <button onClick={()=>setShowRejectForm(true)} className="btn-danger flex-1">✕ Отклонить</button>
           </div>
         )}
+
+        {/* Block button for Алия (observer) */}
+        {canBlock && !showRejectForm && (
+          <div className="p-6 border-t border-gray-100">
+            <button onClick={doBlock}
+                    className="w-full py-2.5 px-4 rounded-xl text-sm font-semibold transition-all"
+                    style={isBlocked
+                      ? {background:'#f5f0f8', color:'#4D295D', border:'1px solid #c4a8d8'}
+                      : {background:'#fff0f0', color:'#7a1000', border:'1px solid #e88080'}}>
+              {isBlocked ? '🔓 Снять блокировку' : '🔒 Заблокировать счёт'}
+            </button>
+            {isBlocked && req.blockedBy && (
+              <p className="text-xs text-center mt-2" style={{color:'#7a1000'}}>
+                Заблокировано: {req.blockedBy}
+              </p>
+            )}
+          </div>
+        )}
       </div>
     </>
   );
@@ -1308,8 +1344,7 @@ function WhatsAppSettings({ waContacts }) {
   const configured = USERS.filter(u => waContacts[u.name]?.phone && waContacts[u.name]?.apikey);
   const notConfigured = USERS.filter(u => !waContacts[u.name]?.phone || !waContacts[u.name]?.apikey);
   const flow = [
-    { event:'Новая заявка', to:'Алия Кенжебекова' },
-    { event:'Финдир. одобрил', to:'Мусина Дина' },
+    { event:'Новая заявка', to:'Мусина Дина' },
     { event:'Учредитель одобрил', to:'Гульнар Сулейменова' },
     { event:'Оплачено / Отклонено', to:'Инициатор заявки' },
   ];
@@ -1790,9 +1825,8 @@ function DashboardView({ requests, user, onUpdate }) {
     const idx = STATUS_FLOW.indexOf(req.status);
     const next = idx < STATUS_FLOW.length-1 ? STATUS_FLOW[idx+1] : req.status;
     const actionLabels = {
-      cfo:     'Одобрено (1-е согласование)',
-      manager: 'Одобрено (2-е согласование)',
-      approved:'Одобрено финансовым блоком',
+      manager: 'Одобрено учредителем',
+      approved:'Одобрено',
       paid:    'Оплачено',
     };
     const histEntry = { date: new Date().toISOString(), actor: actorName,
@@ -1814,20 +1848,30 @@ function DashboardView({ requests, user, onUpdate }) {
     onUpdate(rejectReq(req, actorName, comment));
   };
 
+  const handleBlock = (req, action, actorName) => {
+    if (action === 'block') {
+      const histEntry = { date: new Date().toISOString(), actor: actorName, action: '🔒 Счёт заблокирован', comment: '' };
+      onUpdate({ ...req, status: 'blocked', blockedBy: actorName, blockedPrevStatus: req.status, history: [...req.history, histEntry] });
+    } else {
+      const histEntry = { date: new Date().toISOString(), actor: actorName, action: '🔓 Блокировка снята', comment: '' };
+      onUpdate({ ...req, status: req.blockedPrevStatus || 'new', blockedBy: null, blockedPrevStatus: null, history: [...req.history, histEntry] });
+    }
+  };
+
   const handleQuickApprove = (req) => {
-    if (!canActOn(user.role, req.status)) return;
+    if (!canActOn(user.role, req.status, req)) return;
     onUpdate(advanceStatus(req, user.name));
   };
 
   const handleQuickReject = (req) => {
-    if (!canActOn(user.role, req.status)) return;
+    if (!canActOn(user.role, req.status, req)) return;
     const reason = window.prompt('Причина отклонения:');
     if (reason === null) return;
     onUpdate(rejectReq(req, user.name, reason));
   };
 
   const handleBulkApprove = () => {
-    const toUpdate = requests.filter(r => selectedIds.includes(r.id) && canActOn(user.role, r.status));
+    const toUpdate = requests.filter(r => selectedIds.includes(r.id) && canActOn(user.role, r.status, r));
     toUpdate.forEach(r => onUpdate(advanceStatus(r, user.name)));
     setSelectedIds([]);
   };
@@ -1835,7 +1879,7 @@ function DashboardView({ requests, user, onUpdate }) {
   const handleBulkReject = () => {
     const reason = window.prompt('Причина отклонения (для всех выбранных):');
     if (reason === null) return;
-    const toUpdate = requests.filter(r => selectedIds.includes(r.id) && canActOn(user.role, r.status));
+    const toUpdate = requests.filter(r => selectedIds.includes(r.id) && canActOn(user.role, r.status, r));
     toUpdate.forEach(r => onUpdate(rejectReq(r, user.name, reason)));
     setSelectedIds([]);
   };
@@ -1891,6 +1935,7 @@ function DashboardView({ requests, user, onUpdate }) {
                 onClose={()=>setDrawerReq(null)}
                 onApprove={(req,actor,comment)=>handleApprove(req,actor,comment)}
                 onReject={(req,actor,comment)=>handleReject(req,actor,comment)}
+                onBlock={(req,action,actor)=>handleBlock(req,action,actor)}
                 onUpdateComment={handleUpdateComment} />
       )}
     </div>
@@ -1954,7 +1999,7 @@ function MyRequestsView({ requests, user }) {
       )}
       {drawerReq && (
         <Drawer req={drawerReq} user={user} onClose={()=>setDrawerReq(null)}
-                onApprove={()=>{}} onReject={()=>{}} onUpdateComment={()=>{}} />
+                onApprove={()=>{}} onReject={()=>{}} onBlock={()=>{}} onUpdateComment={()=>{}} />
       )}
     </div>
   );
@@ -2104,7 +2149,7 @@ function NewRequestForm({ user, requests, onSubmit, settings }) {
       dueDate: form.dueDate,
       priority: form.priority,
       purpose: form.purpose,
-      status: 'cfo',
+      status: 'manager',
       createdAt: new Date().toISOString(),
       isDup,
       treasuryComment: '',
@@ -2471,7 +2516,9 @@ function NewRequestForm({ user, requests, onSubmit, settings }) {
 //
 
 function App() {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    try { const s = localStorage.getItem('imbir_session'); return s ? JSON.parse(s) : null; } catch(e) { return null; }
+  });
   const [activeTab, setActiveTab] = useState('dashboard');
   const [requests, setRequests] = useState(() => lsLoad() || SEED);
   const [settings,  setSettings]  = useState(() => loadSettings()  || DEFAULT_SETTINGS);
@@ -2522,10 +2569,14 @@ function App() {
 
   const handleLogin = (u) => {
     setUser(u);
-    setActiveTab(['manager','cfo','treasurer'].includes(u.role) ? 'dashboard' : 'form');
+    try { localStorage.setItem('imbir_session', JSON.stringify(u)); } catch(e) {}
+    setActiveTab(['manager','observer','treasurer'].includes(u.role) ? 'dashboard' : 'form');
   };
 
-  const handleLogout = () => { setUser(null); };
+  const handleLogout = () => {
+    setUser(null);
+    try { localStorage.removeItem('imbir_session'); } catch(e) {}
+  };
 
   const updateRequest = (updated) => {
     const previous = requests.find(r => r.id === updated.id);
@@ -2547,7 +2598,7 @@ function App() {
     showToast(isDup
       ? `Заявка ${req.id} отправлена (обнаружен возможный дубликат — DUP)`
       : `Заявка ${req.id} успешно отправлена на согласование`, isDup?'info':'success');
-    setActiveTab(['manager','cfo','treasurer'].includes(user.role) ? 'dashboard' : 'my');
+    setActiveTab(['manager','observer','treasurer'].includes(user.role) ? 'dashboard' : 'my');
   };
 
   if (!user) return (
@@ -2568,7 +2619,7 @@ function App() {
                       onClose={() => setShowChangePw(false)} />
       )}
 
-      {activeTab==='dashboard' && ['manager','cfo','treasurer'].includes(user.role) && (
+      {activeTab==='dashboard' && ['manager','observer','treasurer'].includes(user.role) && (
         <DashboardView requests={requests} user={user} onUpdate={updateRequest} />
       )}
       {activeTab==='form' && (
@@ -2577,7 +2628,7 @@ function App() {
       {activeTab==='my' && (
         <MyRequestsView requests={requests} user={user} />
       )}
-      {activeTab==='settings' && ['manager','cfo','treasurer'].includes(user.role) && (
+      {activeTab==='settings' && ['manager','observer','treasurer'].includes(user.role) && (
         <SettingsView settings={settings} setSettings={s=>{ setSettings(s); saveSettings(s); }}
                       passwords={passwords} onUpdatePassword={handleUpdatePassword}
                       waContacts={waContacts} onUpdateWA={handleUpdateWA}
