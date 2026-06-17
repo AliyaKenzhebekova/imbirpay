@@ -280,6 +280,10 @@ const sbSave = async (requests) => {
   } catch {}
 };
 
+const sbUpsertOne = async (req) => {
+  try { await sb.from('requests').upsert({ id: req.id, data: req, updated_at: new Date().toISOString() }); } catch {}
+};
+
 const sbDelete = async (id) => {
   try { await sb.from('requests').delete().eq('id', id); } catch {}
 };
@@ -2560,7 +2564,7 @@ function App() {
     const newList = requests.map(r => r.id===updated.id ? updated : r);
     setRequests(newList);
     lsSave(newList);
-    sbSave(newList);
+    sbUpsertOne(updated);
   };
 
   const deleteRequest = (id) => {
@@ -2575,7 +2579,7 @@ function App() {
     const newList = [...requests, req];
     setRequests(newList);
     lsSave(newList);
-    sbSave(newList);
+    sbUpsertOne(req);
     dispatchWANotifications(req, null, waContacts);
     showToast(isDup
       ? `Заявка ${req.id} отправлена (обнаружен возможный дубликат — DUP)`
