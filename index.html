@@ -298,113 +298,7 @@ const getCategoryIcon  = id => CATEGORIES.find(c => c.id === id)?.icon || '📋'
 
 //
 
-const SEED = [
-  {
-    id:'IMG-2026-00001', type:'invoice', category:'rent',
-    initiatorName:'Асель Агадилова', initiatorPosition:'Директор салона', branch:'Мангилик Ел',
-    fileName:'arenda_mangilikel_iyun2026.pdf', fileData:null,
-    amount:480000, dueDate:'2026-06-20', priority:'urgent',
-    purpose:'Аренда помещения салона Мангилик Ел за июнь 2026. Срочно — договор до 20 июня.',
-    status:'new', createdAt:'2026-06-15T08:30:00Z', isDup:false, treasuryComment:'',
-    history:[
-      {date:'2026-06-15T08:30:00Z', actor:'Асель Агадилова', action:'Заявка создана', comment:''},
-    ],
-  },
-  {
-    id:'IMG-2026-00002', type:'invoice', category:'salary',
-    initiatorName:'Нургуль Казбекова', initiatorPosition:'Директор по развитию', branch:'Головной офис',
-    fileName:'zarplata_ho_iyun2026.pdf', fileData:null,
-    amount:2350000, dueDate:'2026-06-25', priority:'urgent',
-    purpose:'Зарплата сотрудников головного офиса за июнь 2026.',
-    status:'manager', createdAt:'2026-06-14T09:00:00Z', isDup:false, treasuryComment:'',
-    history:[
-      {date:'2026-06-14T09:00:00Z', actor:'Нургуль Казбекова', action:'Заявка создана', comment:''},
-      {date:'2026-06-14T09:05:00Z', actor:'Система', action:'Направлена учредителю на согласование', comment:''},
-    ],
-  },
-  {
-    id:'IMG-2026-00003', type:'invoice', category:'suppliers',
-    initiatorName:'Лаура Байгожанова', initiatorPosition:'Директор салона', branch:'Платинум',
-    fileName:'kosmetika_platinuim_iyun2026.pdf', fileData:null,
-    amount:345000, dueDate:'2026-06-22', priority:'standard',
-    purpose:'Плановая закупка косметики и расходных материалов у поставщика на июль 2026.',
-    status:'approved', createdAt:'2026-06-12T11:00:00Z', isDup:false, treasuryComment:'Оплатить до 22.06',
-    history:[
-      {date:'2026-06-12T11:00:00Z', actor:'Лаура Байгожанова', action:'Заявка создана', comment:''},
-      {date:'2026-06-12T11:05:00Z', actor:'Система', action:'Направлена учредителю на согласование', comment:''},
-      {date:'2026-06-13T10:00:00Z', actor:'Мусина Дина', action:'Одобрено учредителем', comment:'Оплатить до 22.06'},
-    ],
-  },
-  {
-    id:'IMG-2026-00004', type:'advance', category:'other',
-    initiatorName:'Назерке Каребаева', initiatorPosition:'Директор по стратегическому развитию', branch:'Головной офис',
-    requestName:'КОНФ-2026-002', recipient:'Назерке Каребаева', paymentForm:'Перевод на карту',
-    periodFrom:'2026-06-18', periodTo:'2026-06-20',
-    amount:95000, dueDate:'2026-06-18', priority:'standard',
-    purpose:'Участие в конференции по управлению спа-бизнесом, Алматы. Оргвзнос + проживание.',
-    status:'approved', createdAt:'2026-06-13T14:00:00Z', isDup:false, treasuryComment:'',
-    history:[
-      {date:'2026-06-13T14:00:00Z', actor:'Назерке Каребаева', action:'Заявка создана', comment:''},
-      {date:'2026-06-13T14:05:00Z', actor:'Система', action:'Направлена учредителю на согласование', comment:''},
-      {date:'2026-06-14T09:30:00Z', actor:'Мусина Дина', action:'Одобрено учредителем', comment:''},
-    ],
-  },
-  {
-    id:'IMG-2026-00005', type:'invoice', category:'utilities',
-    initiatorName:'Дарина Калимжанова', initiatorPosition:'Старший администратор', branch:'Наурызбай батыра',
-    fileName:'kommunalka_nauryz_may2026.pdf', fileData:null,
-    amount:58500, dueDate:'2026-06-05', priority:'planned',
-    purpose:'Коммунальные услуги (электроэнергия, вода, интернет) за май 2026, Наурызбай батыра.',
-    status:'paid', createdAt:'2026-06-01T10:00:00Z', isDup:false,
-    treasuryComment:'Оплачено 03.06.2026 через Kaspi Business. Квитанция сохранена.',
-    history:[
-      {date:'2026-06-01T10:00:00Z', actor:'Дарина Калимжанова', action:'Заявка создана', comment:''},
-      {date:'2026-06-01T10:05:00Z', actor:'Система', action:'Направлена учредителю на согласование', comment:''},
-      {date:'2026-06-02T09:00:00Z', actor:'Мусина Дина', action:'Одобрено учредителем', comment:''},
-      {date:'2026-06-03T10:00:00Z', actor:'Гульнар Сулейменова', action:'Оплачено', comment:'Kaspi Business, квитанция сохранена'},
-    ],
-  },
-  {
-    id:'IMG-2026-00006', type:'advance', category:'services',
-    initiatorName:'Галия Баймухаметова', initiatorPosition:'Юрист', branch:'Головной офис',
-    requestName:'ЮР-2026-003', recipient:'Галия Баймухаметова', paymentForm:'Перевод на карту',
-    periodFrom:'2026-06-17', periodTo:'2026-06-30',
-    amount:180000, dueDate:'2026-06-17', priority:'standard',
-    purpose:'Юридическое сопровождение переоформления договора аренды с арендодателем (Розыбакиева).',
-    status:'rejected', createdAt:'2026-06-10T13:00:00Z', isDup:false, treasuryComment:'',
-    history:[
-      {date:'2026-06-10T13:00:00Z', actor:'Галия Баймухаметова', action:'Заявка создана', comment:''},
-      {date:'2026-06-10T13:05:00Z', actor:'Система', action:'Направлена учредителю на согласование', comment:''},
-      {date:'2026-06-11T11:00:00Z', actor:'Мусина Дина', action:'Отклонено', comment:'Сумма завышена. Прошу предоставить 2-3 альтернативных предложения.'},
-    ],
-  },
-  {
-    id:'IMG-2026-00007', type:'invoice', category:'suppliers',
-    initiatorName:'Эльмира Қызайбек', initiatorPosition:'Старший администратор', branch:'Тауелсыздык',
-    fileName:'oborudovanie_tauels_2026.pdf', fileData:null,
-    amount:620000, dueDate:'2026-06-30', priority:'standard',
-    purpose:'Закупка массажного оборудования — 2 стола + аксессуары. Тауелсыздык.',
-    status:'blocked', blockedBy:'Алия Кенжебекова', blockedPrevStatus:'manager',
-    createdAt:'2026-06-11T08:00:00Z', isDup:false, treasuryComment:'',
-    history:[
-      {date:'2026-06-11T08:00:00Z', actor:'Эльмира Қызайбек', action:'Заявка создана', comment:''},
-      {date:'2026-06-11T08:05:00Z', actor:'Система', action:'Направлена учредителю на согласование', comment:''},
-      {date:'2026-06-16T14:00:00Z', actor:'Алия Кенжебекова', action:'🔒 Счёт заблокирован', comment:'Требуется сравнение с тремя поставщиками.'},
-    ],
-  },
-  {
-    id:'IMG-2026-00008', type:'advance', category:'marketing',
-    initiatorName:'Мадина Бершимбаева', initiatorPosition:'РОП', branch:'Семей',
-    requestName:'МКТ-2026-004', recipient:'Мадина Бершимбаева', paymentForm:'Наличные',
-    periodFrom:'2026-06-17', periodTo:'2026-07-17',
-    amount:75000, dueDate:'2026-06-20', priority:'planned',
-    purpose:'Таргетированная реклама в Instagram для продвижения летних акций филиала Семей.',
-    status:'new', createdAt:'2026-06-17T07:00:00Z', isDup:false, treasuryComment:'',
-    history:[
-      {date:'2026-06-17T07:00:00Z', actor:'Мадина Бершимбаева', action:'Заявка создана', comment:''},
-    ],
-  },
-];
+const SEED = [];
 
 //
 
@@ -2544,7 +2438,7 @@ function App() {
     try { const s = localStorage.getItem('imbir_session'); return s ? JSON.parse(s) : null; } catch(e) { return null; }
   });
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [requests, setRequests] = useState(() => lsLoad() || SEED);
+  const [requests, setRequests] = useState(() => lsLoad() || []);
   const [settings,  setSettings]  = useState(() => loadSettings()  || DEFAULT_SETTINGS);
   const [passwords,  setPasswords]  = useState(() => loadPasswords() || DEFAULT_PASSWORDS);
   const [waContacts, setWAContacts] = useState(() => loadWA() || {});
@@ -2563,8 +2457,6 @@ function App() {
         lsSave(data);
         setSyncStatus('ok');
       } else if (data && data.length === 0) {
-        // Первый запуск — заливаем SEED данные в Supabase
-        await sbSave(SEED);
         setSyncStatus('ok');
       } else {
         setSyncStatus('offline');
