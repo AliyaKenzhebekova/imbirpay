@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /Users/admin/Dev -maxdepth 3 -name \"*.json\" -o -name \"*.py\" -o -name \"*.ts\" -o -name \"*.js\" 2>/dev/null | head -20)",
+      "Bash(python3 -m http.server 8080)",
+      "Bash(echo \"PID=$!\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8080/index.html)",
+      "Bash(open http://localhost:8080/index.html)"
+    ]
+  }
+}

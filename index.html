@@ -1,0 +1,2590 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>ImbirPay — Казначейство Imbir Group</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.23.10/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif; background: #f8f9fa; }
+    @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
+    @keyframes fadeIn       { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes toastIn      { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .anim-slide-right { animation: slideInRight 0.28s cubic-bezier(.4,0,.2,1); }
+    .anim-fade        { animation: fadeIn 0.22s ease-out; }
+    .anim-toast       { animation: toastIn 0.3s ease-out; }
+    input[type=range]                           { -webkit-appearance: none; height: 6px; border-radius: 4px; background: #e5e7eb; outline: none; cursor: pointer; }
+    input[type=range]::-webkit-slider-thumb     { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #E8611A; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,.25); }
+    select:focus, input:focus, textarea:focus   { outline: none; border-color: #E8611A !important; box-shadow: 0 0 0 3px rgba(232,97,26,.15) !important; }
+    ::-webkit-scrollbar                         { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-thumb                   { background: #d1d5db; border-radius: 3px; }
+    .checkbox-orange                            { accent-color: #E8611A; width: 16px; height: 16px; cursor: pointer; }
+    .btn-primary  { background: #E8611A; color: #fff; padding: 10px 24px; border-radius: 10px; font-weight: 600; font-size: 14px; cursor: pointer; border: none; transition: background .15s; }
+    .btn-primary:hover  { background: #c4511a; }
+    .btn-primary:disabled { background: #d1d5db; cursor: not-allowed; }
+    .btn-outline { background: #fff; color: #E8611A; border: 1.5px solid #E8611A; padding: 9px 22px; border-radius: 10px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all .15s; }
+    .btn-outline:hover { background: #fff5f0; }
+    .btn-danger  { background: #fff; color: #C0392B; border: 1.5px solid #C0392B; padding: 9px 22px; border-radius: 10px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all .15s; }
+    .btn-danger:hover { background: #fdf2f2; }
+    .btn-ghost   { background: transparent; color: #6b7280; padding: 8px 14px; border-radius: 8px; cursor: pointer; border: none; font-size: 14px; transition: all .15s; }
+    .btn-ghost:hover { background: #f3f4f6; color: #374151; }
+    .input-field { width: 100%; border: 1.5px solid #e5e7eb; border-radius: 10px; padding: 10px 14px; font-size: 14px; background: #fff; transition: border-color .15s; }
+    .card { background: #fff; border-radius: 16px; border: 1px solid #f0f0f0; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+    .type-badge-invoice { background: #FFF3ED; color: #E8611A; border: 1px solid #FFCFB3; }
+    .type-badge-advance { background: #EEF4FF; color: #1A6BE8; border: 1px solid #B3CCFF; }
+    .dup-badge { background: #FEF9C3; color: #854D0E; border: 1px solid #FEF08A; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 6px; }
+    th { font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; }
+    tr:hover td { background: #fafafa; }
+    .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 40; backdrop-filter: blur(2px); }
+    .drawer-panel   { position: fixed; top: 0; right: 0; height: 100vh; width: 520px; max-width: 95vw; background: #fff; z-index: 50; overflow-y: auto; }
+    .step-dot { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; transition: all .2s; }
+    .step-line { flex: 1; height: 2px; }
+    .priority-planned  { background: #f3f4f6; color: #6b7280; }
+    .priority-standard { background: #dbeafe; color: #1d4ed8; }
+    .priority-urgent   { background: #fee2e2; color: #dc2626; }
+    .chain-step { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 12px; border: 1.5px solid; }
+  </style>
+</head>
+<body>
+<div id="root">
+  <div id="loading-screen" style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:-apple-system,sans-serif;background:#fff5f0;">
+    <div style="width:56px;height:56px;border-radius:16px;background:#E8611A;display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
+      <span style="color:#fff;font-size:28px;font-weight:900;">₸</span>
+    </div>
+    <div style="font-size:18px;font-weight:700;color:#1a1a1a;">ImbirPay</div>
+    <div style="font-size:13px;color:#9ca3af;margin-top:6px;">Загрузка...</div>
+  </div>
+</div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useMemo } = React;
+
+//
+
+const BRAND = '#E8611A';
+
+const USERS = [
+  { name: 'Мусина Дина',          position: 'Учредитель',                           role: 'manager' },
+  { name: 'Алия Кенжебекова',     position: 'Финансовый директор',                  role: 'cfo' },
+  { name: 'Гульнар Сулейменова',  position: 'Казначей',                             role: 'treasurer' },
+  { name: 'Нургуль Казбекова',    position: 'Директор по развитию',                 role: 'initiator' },
+  { name: 'Назерке Каребаева',    position: 'Директор по стратегическому развитию', role: 'initiator' },
+  { name: 'Галия Баймухаметова',  position: 'Юрист',                               role: 'initiator' },
+  { name: 'Мухтар Нургалиев',     position: 'HR менеджер',                          role: 'initiator' },
+  { name: 'Мадина Бершимбаева',   position: 'РОП',                                  role: 'initiator' },
+  { name: 'Бибинур Баймаганбетова', position: 'Последующий контроль',               role: 'initiator' },
+  { name: 'Асель Агадилова',      position: 'Директор салона',                      role: 'initiator' },
+  { name: 'Лаура Байгожанова',    position: 'Директор салона',                      role: 'initiator' },
+  { name: 'Дарига Кисатова',      position: 'Старший администратор',                role: 'initiator' },
+  { name: 'Дарина Калимжанова',   position: 'Старший администратор',                role: 'initiator' },
+  { name: 'Айзада Бауржанқызы',   position: 'Старший администратор',                role: 'initiator' },
+  { name: 'Эльмира Қызайбек',     position: 'Старший администратор',                role: 'initiator' },
+  { name: 'Шакержан Аружан',     position: 'Ответственная филиала Семей',           role: 'initiator' },
+];
+
+const BRANCHES = ['Офис', 'Платинум', 'Бокейхана', 'Мангилик Ел', 'Наурызбай батыра', 'Розыбакиева', 'Павлодар', 'Тауелсыздык', 'Караганда', 'Семей'];
+
+const CATEGORIES = [
+  { id: 'rent',      label: 'Аренда',         icon: '🏢' },
+  { id: 'suppliers', label: 'Поставщики',      icon: '📦' },
+  { id: 'services',  label: 'Услуги',          icon: '🔧' },
+  { id: 'utilities', label: 'Коммунальные',    icon: '💡' },
+  { id: 'salary',    label: 'Зарплата / ФОТ', icon: '👥' },
+  { id: 'other',     label: 'Прочее',          icon: '📋' },
+];
+
+const STATUSES = {
+  new:      { label: 'Новая',          color: '#1A6BE8', bg: '#EEF4FF', icon: '🔵' },
+  manager:  { label: 'У учредителя',   color: '#C8820A', bg: '#FFF8E1', icon: '👔' },
+  cfo:      { label: 'У финдиректора', color: '#C8820A', bg: '#FFF8E1', icon: '💼' },
+  approved: { label: 'Одобрено',       color: '#1B9963', bg: '#E8F5ED', icon: '✅' },
+  paid:     { label: 'Оплачено',       color: '#1A4DAB', bg: '#E8EFF9', icon: '💳' },
+  rejected: { label: 'Отклонено',      color: '#C0392B', bg: '#FDECEA', icon: '❌' },
+};
+
+const CHAIN = [
+  { key: 'cfo',      name: 'Алия Кенжебекова',   title: 'Финансовый директор', step: '1-е согласование' },
+  { key: 'manager',  name: 'Мусина Дина',         title: 'Учредитель',          step: '2-е согласование' },
+  { key: 'treasurer',name: 'Гульнар Сулейменова', title: 'Казначей',            step: 'Исполнение оплаты' },
+];
+
+const PRIORITY_LABELS = { planned: 'Плановая', standard: 'Стандарт', urgent: 'Срочно' };
+const PRIORITY_STEPS = ['planned', 'standard', 'urgent'];
+
+const STATUS_FLOW = ['new', 'cfo', 'manager', 'approved', 'paid'];
+
+// Строгие зоны ответственности: роль → статус на котором она действует
+const ROLE_STAGE = { cfo: 'cfo', manager: 'manager', treasurer: 'approved' };
+const canActOn = (userRole, reqStatus) => ROLE_STAGE[userRole] === reqStatus;
+
+// Пользователи по умолчанию во всех филиалах
+const ALL_BRANCH_USERS = ['Нургуль Казбекова', 'Назерке Каребаева'];
+
+// Специфичные ответственные по филиалам (добавляются к ALL_BRANCH_USERS)
+const BRANCH_SPECIFIC = {
+  'Головной офис':    ['Мусина Дина','Алия Кенжебекова','Гульнар Сулейменова','Галия Баймухаметова','Бибинур Баймаганбетова'],
+  'Платинум':         ['Лаура Байгожанова'],
+  'Бокейхана':        ['Лаура Байгожанова','Мухтар Нургалиев'],
+  'Мангилик Ел':      ['Асель Агадилова'],
+  'Наурызбай батыра': ['Эльмира Қызайбек'],
+  'Розыбакиева':      ['Айзада Бауржанқызы'],
+  'Павлодар':         ['Дарига Кисатова'],
+  'Тауелсыздык':      ['Дарина Калимжанова'],
+  'Караганда':        ['Асель Агадилова'],
+  'Офис':             ['Мадина Бершимбаева', 'Гульнар Сулейменова'],
+  'Семей':            ['Шакержан Аружан'],
+};
+
+const getBranchUsers = (branch, cfg) => {
+  if (!branch) return [];
+  const sp  = (cfg?.branchSpecific ?? BRANCH_SPECIFIC)[branch] || [];
+  const all = cfg?.allBranchUsers ?? ALL_BRANCH_USERS;
+  return USERS.filter(u => [...sp, ...all].includes(u.name));
+};
+
+const SETTINGS_KEY  = 'imbir_pay_settings_v3';
+const WA_KEY        = 'imbir_pay_wa_v1';
+const loadWA  = () => { try { const d=localStorage.getItem(WA_KEY); return d?JSON.parse(d):null; } catch{return null;} };
+const saveWA  = d  => { try { localStorage.setItem(WA_KEY, JSON.stringify(d)); } catch{} };
+
+// Callmebot — бесплатные WhatsApp уведомления (https://www.callmebot.com/blog/free-api-whatsapp-messages/)
+const sendWhatsApp = (phone, apikey, text) => {
+  if (!phone || !apikey || !text) return false;
+  const p = phone.replace(/\D/g,'');
+  const url = `https://api.callmebot.com/whatsapp.php?phone=${p}&text=${encodeURIComponent(text)}&apikey=${encodeURIComponent(apikey)}`;
+  fetch(url, { mode:'no-cors' }).catch(()=>{});
+  return true;
+};
+
+const buildWAMsg = (req, event, extra='') => {
+  const header = {
+    new:      '🆕 Новая заявка',
+    cfo:      '📋 На согласование (финдир.)',
+    manager:  '📋 На согласование (учредитель)',
+    approved: '✅ Готово к оплате',
+    paid:     '💳 Заявка оплачена',
+    rejected: '❌ Заявка отклонена',
+  }[event] || '📋 ImbirPay';
+  return [
+    `${header} — ImbirPay`,
+    `━━━━━━━━━━━━━━━━━━`,
+    `ID: ${req.id}`,
+    `От: ${req.initiatorName} (${req.branch})`,
+    `Сумма: ${fmt(req.amount)}`,
+    `Категория: ${getCategoryLabel(req.category)}`,
+    `Срок: ${fmtD(req.dueDate)}`,
+    `Цель: ${req.purpose.slice(0,100)}${req.purpose.length>100?'…':''}`,
+    ...(extra ? [``, extra] : []),
+  ].join('\n');
+};
+
+const dispatchWANotifications = (req, prevStatus, waContacts) => {
+  const wc = waContacts || {};
+  const get = name => wc[name];
+  const notify = (name, event, extra) => {
+    const c = get(name);
+    if (c?.phone && c?.apikey) sendWhatsApp(c.phone, c.apikey, buildWAMsg(req, event, extra));
+  };
+  // Новая заявка → Финдиректору
+  if (!prevStatus || (prevStatus === 'new' && req.status === 'cfo')) {
+    notify('Алия Кенжебекова', 'cfo', '⏳ Ожидает вашего согласования');
+  }
+  // Финдир одобрил → Учредителю
+  if (prevStatus === 'cfo' && req.status === 'manager') {
+    notify('Мусина Дина', 'manager', '⏳ Ожидает вашего согласования');
+  }
+  // Учредитель одобрил → Казначею
+  if (prevStatus === 'manager' && req.status === 'approved') {
+    notify('Гульнар Сулейменова', 'approved', '✅ Готово к оплате');
+  }
+  // Оплачено → Инициатору
+  if (prevStatus === 'approved' && req.status === 'paid') {
+    const tr = get('Гульнар Сулейменова');
+    notify(req.initiatorName, 'paid', `Исполнил: ${tr?'Гульнар Сулейменова':''}`);
+  }
+  // Отклонено → Инициатору
+  if (req.status === 'rejected' && prevStatus !== 'rejected') {
+    const lastComment = [...req.history].reverse().find(h=>h.action==='Отклонено')?.comment || '';
+    notify(req.initiatorName, 'rejected', lastComment ? `Причина: ${lastComment}` : '');
+  }
+};
+const PASSWORDS_KEY = 'imbir_pay_passwords_v1';
+const loadPasswords  = () => { try { const p=localStorage.getItem(PASSWORDS_KEY); return p ? JSON.parse(p) : null; } catch { return null; } };
+const savePasswords  = p  => { try { localStorage.setItem(PASSWORDS_KEY, JSON.stringify(p)); } catch {} };
+const DEFAULT_PASSWORDS = Object.fromEntries(USERS.map(u => [u.name, 'imbir2026']));
+
+const loadSettings = () => {
+  try { const s=localStorage.getItem(SETTINGS_KEY); return s ? JSON.parse(s) : null; } catch { return null; }
+};
+const saveSettings = s => { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch {} };
+
+const DEFAULT_SETTINGS = {
+  branches: ['Головной офис', ...BRANCHES],
+  branchSpecific: { ...BRANCH_SPECIFIC },
+  allBranchUsers: [...ALL_BRANCH_USERS],
+};
+
+//
+
+let _idCounter = 7;
+const genId = () => `IMG-2026-${String(_idCounter++).padStart(5, '0')}`;
+
+const fmt  = n => n ? new Intl.NumberFormat('ru-KZ').format(n) + ' ₸' : '0 ₸';
+const fmtD = d => d ? new Date(d).toLocaleDateString('ru-RU') : '—';
+const fmtDT= d => d ? new Date(d).toLocaleString('ru-RU', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
+const sumOf= arr => arr.reduce((s, r) => s + (Number(r.amount)||0), 0);
+
+const LS_KEY = 'imbir_pay_data_v2';
+const lsLoad = () => { try { const r=localStorage.getItem(LS_KEY); return r ? JSON.parse(r) : null; } catch { return null; } };
+const lsSave = d  => { try { localStorage.setItem(LS_KEY, JSON.stringify(d)); } catch {} };
+
+const getCategoryLabel = id => CATEGORIES.find(c => c.id === id)?.label || id || '—';
+
+// SUPABASE
+
+const SB_URL  = 'https://urahbktvjomdlkiqfrgq.supabase.co';
+const SB_KEY  = 'sb_publishable_wmLu7qYjzRMx7jxaUaJCCQ_Vp5DhmyB';
+const sb = supabase.createClient(SB_URL, SB_KEY);
+
+const sbLoad = async () => {
+  try {
+    const { data, error } = await sb.from('requests').select('data');
+    if (error || !data) return null;
+    return data.map(r => r.data).sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+  } catch { return null; }
+};
+
+const sbSave = async (requests) => {
+  try {
+    const rows = requests.map(r => ({ id: r.id, data: r, updated_at: new Date().toISOString() }));
+    await sb.from('requests').upsert(rows);
+  } catch {}
+};
+
+const sbDelete = async (id) => {
+  try { await sb.from('requests').delete().eq('id', id); } catch {}
+};
+
+let _sbChannel = null;
+const sbSubscribe = (onUpdate) => {
+  if (_sbChannel) sb.removeChannel(_sbChannel);
+  _sbChannel = sb.channel('requests-realtime')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'requests' }, async () => {
+      const data = await sbLoad();
+      if (data) { onUpdate(data); lsSave(data); }
+    })
+    .subscribe();
+  return () => { if (_sbChannel) sb.removeChannel(_sbChannel); };
+};
+const getCategoryIcon  = id => CATEGORIES.find(c => c.id === id)?.icon || '📋';
+
+//
+
+const SEED = [
+  {
+    id:'IMG-2026-00001', type:'invoice', category:'rent',
+    initiatorName:'Асель Агадилова', initiatorPosition:'Директор салона', branch:'Мангилик Ел',
+    fileName:'schet_arenda_mangilikel_may2026.pdf', amount:450000,
+    dueDate:'2026-06-05', priority:'urgent',
+    purpose:'Аренда помещения салона Мангилик Ел за май 2026. Срочно — угроза приостановки работы.',
+    status:'manager', createdAt:'2026-05-28T10:00:00Z', isDup:false, treasuryComment:'',
+    history:[
+      {date:'2026-05-28T10:00:00Z', actor:'Асель Агадилова', action:'Заявка создана', comment:''},
+      {date:'2026-05-28T10:01:00Z', actor:'Система', action:'Направлена финдиректору (1-е согласование)', comment:''},
+      {date:'2026-05-29T09:00:00Z', actor:'Алия Кенжебекова', action:'Одобрено (1-е согласование)', comment:'Согласовано'},
+      {date:'2026-05-29T09:01:00Z', actor:'Система', action:'Направлена учредителю (2-е согласование)', comment:''},
+    ],
+  },
+  {
+    id:'IMG-2026-00002', type:'advance', category:'other',
+    initiatorName:'Мухтар Нургалиев', initiatorPosition:'HR менеджер', branch:'Бокейхана',
+    requestName:'КОМ-2026-001', recipient:'Мухтар Нургалиев', paymentForm:'Наличные',
+    periodFrom:'2026-06-01', periodTo:'2026-06-10',
+    amount:85000, dueDate:'2026-06-01', priority:'standard',
+    purpose:'Командировочные расходы Алматы–Павлодар. Проведение собеседований.',
+    status:'cfo', createdAt:'2026-05-29T09:00:00Z', isDup:false, treasuryComment:'',
+    history:[
+      {date:'2026-05-29T09:00:00Z', actor:'Мухтар Нургалиев', action:'Заявка создана', comment:''},
+      {date:'2026-05-29T09:01:00Z', actor:'Система', action:'Направлена финдиректору (1-е согласование)', comment:''},
+    ],
+  },
+  {
+    id:'IMG-2026-00003', type:'invoice', category:'suppliers',
+    initiatorName:'Лаура Байгожанова', initiatorPosition:'Директор салона', branch:'Платинум',
+    fileName:'postavshik_kosmetika_june2026.jpg', amount:320000,
+    dueDate:'2026-06-10', priority:'standard',
+    purpose:'Плановая закупка косметики у поставщика на июнь 2026.',
+    status:'approved', createdAt:'2026-05-30T14:00:00Z', isDup:false, treasuryComment:'',
+    history:[
+      {date:'2026-05-30T14:00:00Z', actor:'Лаура Байгожанова', action:'Заявка создана', comment:''},
+      {date:'2026-05-30T14:30:00Z', actor:'Система', action:'Направлена финдиректору (1-е согласование)', comment:''},
+      {date:'2026-05-31T09:00:00Z', actor:'Алия Кенжебекова', action:'Одобрено (1-е согласование)', comment:''},
+      {date:'2026-05-31T14:00:00Z', actor:'Мусина Дина', action:'Одобрено (2-е согласование)', comment:'К оплате'},
+    ],
+  },
+  {
+    id:'IMG-2026-00004', type:'invoice', category:'utilities',
+    initiatorName:'Дарига Кисатова', initiatorPosition:'Старший администратор', branch:'Розыбакиева',
+    fileName:'kommunalnie_rozybakieva_may2026.pdf', amount:62500,
+    dueDate:'2026-06-03', priority:'planned',
+    purpose:'Электроэнергия + интернет за май 2026, Розыбакиева.',
+    status:'paid', createdAt:'2026-05-25T08:00:00Z', isDup:false,
+    treasuryComment:'Платёж выполнен 27.05.2026 через Kaspi Business.',
+    history:[
+      {date:'2026-05-25T08:00:00Z', actor:'Дарига Кисатова', action:'Заявка создана', comment:''},
+      {date:'2026-05-25T08:30:00Z', actor:'Система', action:'Направлена финдиректору (1-е согласование)', comment:''},
+      {date:'2026-05-26T10:00:00Z', actor:'Алия Кенжебекова', action:'Одобрено (1-е согласование)', comment:''},
+      {date:'2026-05-26T15:00:00Z', actor:'Мусина Дина', action:'Одобрено (2-е согласование)', comment:''},
+      {date:'2026-05-27T09:00:00Z', actor:'Гульнар Сулейменова', action:'Оплачено', comment:'Kaspi Business'},
+    ],
+  },
+  {
+    id:'IMG-2026-00005', type:'advance', category:'services',
+    initiatorName:'Галия Баймухаметова', initiatorPosition:'Юрист', branch:'Платинум',
+    requestName:'ЮР-2026-001', recipient:'Галия Баймухаметова', paymentForm:'Перевод на карту',
+    periodFrom:'2026-06-01', periodTo:'2026-06-30',
+    amount:150000, dueDate:'2026-06-01', priority:'standard',
+    purpose:'Гонорар внешнего юридического консультанта по корпоративным вопросам.',
+    status:'rejected', createdAt:'2026-05-27T11:00:00Z', isDup:false, treasuryComment:'',
+    history:[
+      {date:'2026-05-27T11:00:00Z', actor:'Галия Баймухаметова', action:'Заявка создана', comment:''},
+      {date:'2026-05-28T09:00:00Z', actor:'Мусина Дина', action:'Отклонено', comment:'Требуется договор с консультантом.'},
+    ],
+  },
+  {
+    id:'IMG-2026-00006', type:'invoice', category:'salary',
+    initiatorName:'Мадина Бершимбаева', initiatorPosition:'РОП', branch:'Семей',
+    fileName:'zarplata_semei_june2026.pdf', amount:1850000,
+    dueDate:'2026-06-10', priority:'urgent',
+    purpose:'Зарплата сотрудникам филиала Семей за июнь 2026.',
+    status:'new', createdAt:'2026-06-01T08:00:00Z', isDup:false, treasuryComment:'',
+    history:[
+      {date:'2026-06-01T08:00:00Z', actor:'Мадина Бершимбаева', action:'Заявка создана', comment:''},
+    ],
+  },
+];
+
+//
+
+function StatusBadge({ status }) {
+  const s = STATUSES[status] || STATUSES.new;
+  return (
+    <span style={{ background: s.bg, color: s.color, border: `1px solid ${s.color}30` }}
+          className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap">
+      {s.icon} {s.label}
+    </span>
+  );
+}
+
+function PriorityBadge({ priority }) {
+  const cls = { planned:'priority-planned', standard:'priority-standard', urgent:'priority-urgent' }[priority] || 'priority-planned';
+  return <span className={`${cls} inline-block px-2 py-0.5 rounded-md text-xs font-semibold`}>{PRIORITY_LABELS[priority]||priority}</span>;
+}
+
+//
+
+function Toast({ message, type, onClose }) {
+  useEffect(() => { const t = setTimeout(onClose, 3500); return () => clearTimeout(t); }, []);
+  const colors = { success:'bg-green-600', error:'bg-red-600', info:'bg-blue-600' };
+  return (
+    <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 ${colors[type]||'bg-gray-800'} text-white px-5 py-3 rounded-xl shadow-xl z-[100] flex items-center gap-3 anim-toast`}>
+      <span>{type==='success'?'✅':type==='error'?'❌':'ℹ️'}</span>
+      <span className="text-sm font-medium">{message}</span>
+      <button onClick={onClose} className="ml-2 opacity-70 hover:opacity-100 text-lg leading-none">×</button>
+    </div>
+  );
+}
+
+//
+
+function ProfileModal({ user, passwords, waContacts, onSavePassword, onSaveWA, onClose }) {
+  const [tab, setTab] = useState('password'); // 'password' | 'whatsapp'
+
+  // --- Password tab state ---
+  const [currentPw, setCurrentPw] = useState('');
+  const [newPw,     setNewPw]     = useState('');
+  const [confirmPw, setConfirmPw] = useState('');
+  const [pwError,   setPwError]   = useState('');
+  const [pwSuccess, setPwSuccess] = useState(false);
+  const [showCur,   setShowCur]   = useState(false);
+  const [showNew,   setShowNew]   = useState(false);
+  const [showCon,   setShowCon]   = useState(false);
+
+  // --- WhatsApp tab state ---
+  const myWA = waContacts[user.name] || {};
+  const [waPhone,   setWaPhone]   = useState(myWA.phone  || '');
+  const [waApikey,  setWaApikey]  = useState(myWA.apikey || '');
+  const [showKey,   setShowKey]   = useState(false);
+  const [waSaved,   setWaSaved]   = useState(false);
+  const [waTesting, setWaTesting] = useState(false);
+  const [waTestRes, setWaTestRes] = useState('');
+
+  const EyeBtn = ({ show, toggle }) => (
+    <button type="button" onClick={toggle}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-sm">
+      {show ? '🙈' : '👁'}
+    </button>
+  );
+
+  const handleSavePassword = () => {
+    setPwError('');
+    if (currentPw !== (passwords[user.name] || 'imbir2026')) { setPwError('Неверный текущий пароль'); return; }
+    if (newPw.length < 4) { setPwError('Новый пароль — минимум 4 символа'); return; }
+    if (newPw !== confirmPw) { setPwError('Пароли не совпадают'); return; }
+    onSavePassword(user.name, newPw);
+    setPwSuccess(true);
+    setTimeout(onClose, 1500);
+  };
+
+  const handleSaveWA = () => {
+    onSaveWA(user.name, { phone: waPhone.trim(), apikey: waApikey.trim() });
+    setWaSaved(true);
+    setTimeout(() => setWaSaved(false), 2500);
+  };
+
+  const handleTestWA = () => {
+    if (!waPhone || !waApikey) return;
+    setWaTesting(true); setWaTestRes('');
+    sendWhatsApp(waPhone, waApikey, `✅ Тест ImbirPay\nПривет, ${user.name}!\nУведомления подключены.`);
+    setTimeout(() => {
+      setWaTesting(false);
+      setWaTestRes('✅ Отправлено — проверьте WhatsApp');
+      setTimeout(() => setWaTestRes(''), 5000);
+    }, 1500);
+  };
+
+  const waConfigured = myWA.phone && myWA.apikey;
+
+  return (
+    <>
+      <div className="drawer-overlay" onClick={onClose} />
+      <div className="fixed inset-0 flex items-center justify-center z-[60] px-4">
+        <div className="card w-full max-w-md anim-fade overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm"
+                   style={{background: '#E8611A'}}>{user.name.charAt(0)}</div>
+              <div>
+                <div className="font-bold text-gray-900">{user.name}</div>
+                <div className="text-xs text-gray-500">{user.position}</div>
+              </div>
+            </div>
+            <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 text-xl">×</button>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex border-b border-gray-100">
+            <button onClick={() => setTab('password')}
+                    className={`flex-1 py-3 text-sm font-medium transition-all ${tab==='password' ? 'border-b-2 text-orange-600' : 'text-gray-500 hover:text-gray-700'}`}
+                    style={tab==='password' ? {borderColor:'#E8611A'} : {}}>
+              🔑 Пароль
+            </button>
+            <button onClick={() => setTab('whatsapp')}
+                    className={`flex-1 py-3 text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${tab==='whatsapp' ? 'border-b-2 text-orange-600' : 'text-gray-500 hover:text-gray-700'}`}
+                    style={tab==='whatsapp' ? {borderColor:'#E8611A'} : {}}>
+              📱 WhatsApp
+              {waConfigured
+                ? <span className="w-2 h-2 rounded-full bg-green-500" />
+                : <span className="w-2 h-2 rounded-full bg-gray-300" />}
+            </button>
+          </div>
+
+          <div className="p-6">
+            
+            {tab === 'password' && (
+              <div className="space-y-4 anim-fade">
+                {pwSuccess ? (
+                  <div className="text-center py-8">
+                    <div className="text-5xl mb-3">✅</div>
+                    <p className="font-semibold text-green-700">Пароль успешно изменён</p>
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Текущий пароль</label>
+                      <div className="relative">
+                        <input type={showCur ? 'text' : 'password'} className="input-field pr-10"
+                               placeholder="Введите текущий пароль"
+                               value={currentPw} onChange={e => { setCurrentPw(e.target.value); setPwError(''); }} />
+                        <EyeBtn show={showCur} toggle={() => setShowCur(s=>!s)} />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Новый пароль</label>
+                      <div className="relative">
+                        <input type={showNew ? 'text' : 'password'} className="input-field pr-10"
+                               placeholder="Минимум 4 символа"
+                               value={newPw} onChange={e => { setNewPw(e.target.value); setPwError(''); }} />
+                        <EyeBtn show={showNew} toggle={() => setShowNew(s=>!s)} />
+                      </div>
+                      {newPw.length > 0 && (
+                        <div className="mt-1.5 flex items-center gap-1">
+                          {[1,2,3,4].map(i => (
+                            <div key={i} className={`h-1 flex-1 rounded-full transition-all ${newPw.length >= i*2 ? (newPw.length >= 8 ? 'bg-green-500' : 'bg-orange-400') : 'bg-gray-200'}`} />
+                          ))}
+                          <span className="text-xs text-gray-400 ml-1 w-16">
+                            {newPw.length < 4 ? 'слабый' : newPw.length < 8 ? 'средний' : 'надёжный'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Повторите пароль</label>
+                      <div className="relative">
+                        <input type={showCon ? 'text' : 'password'} className="input-field pr-10"
+                               placeholder="Повторите новый пароль"
+                               value={confirmPw} onChange={e => { setConfirmPw(e.target.value); setPwError(''); }}
+                               onKeyDown={e => e.key==='Enter' && handleSavePassword()} />
+                        <EyeBtn show={showCon} toggle={() => setShowCon(s=>!s)} />
+                      </div>
+                      {confirmPw && newPw === confirmPw && <p className="text-xs text-green-600 mt-1">✓ Совпадают</p>}
+                    </div>
+                    {pwError && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{pwError}</p>}
+                    <div className="flex gap-3 pt-1">
+                      <button onClick={handleSavePassword} disabled={!currentPw||!newPw||!confirmPw} className="btn-primary flex-1">Сохранить</button>
+                      <button onClick={onClose} className="btn-ghost px-4">Отмена</button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            
+            {tab === 'whatsapp' && (
+              <div className="space-y-4 anim-fade">
+                {/* Mini instructions */}
+                <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-xs text-green-800">
+                  <div className="font-semibold mb-1">Как получить API-ключ:</div>
+                  <div>1. Добавьте в WhatsApp: <span className="font-mono font-bold">+34 644 32 44 19</span></div>
+                  <div>2. Отправьте: <span className="font-mono bg-green-100 px-1 rounded">I allow callmebot to send me messages</span></div>
+                  <div>3. Скопируйте ключ из ответного сообщения</div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Номер телефона WhatsApp</label>
+                  <input type="tel" className="input-field" placeholder="77071234567 (без + и пробелов)"
+                         value={waPhone} onChange={e => setWaPhone(e.target.value)} />
+                  <p className="text-xs text-gray-400 mt-1">Формат: 7XXXXXXXXXX (Казахстан) или с кодом страны</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">API-ключ Callmebot</label>
+                  <div className="relative">
+                    <input type={showKey ? 'text' : 'password'} className="input-field pr-10"
+                           placeholder="Ключ из сообщения Callmebot"
+                           value={waApikey} onChange={e => setWaApikey(e.target.value)} />
+                    <EyeBtn show={showKey} toggle={() => setShowKey(s=>!s)} />
+                  </div>
+                </div>
+
+                {waTestRes && <p className="text-sm text-green-700 bg-green-50 px-3 py-2 rounded-lg">{waTestRes}</p>}
+
+                <div className="flex gap-2 pt-1">
+                  <button onClick={handleSaveWA} disabled={!waPhone||!waApikey} className="btn-primary flex-1">
+                    {waSaved ? '✅ Сохранено' : 'Сохранить'}
+                  </button>
+                  {waPhone && waApikey && (
+                    <button onClick={handleTestWA} disabled={waTesting} className="btn-outline px-4 text-sm">
+                      {waTesting ? '⏳' : '📤 Тест'}
+                    </button>
+                  )}
+                </div>
+
+                {waConfigured && (
+                  <p className="text-xs text-green-600 text-center">
+                    ✅ Уведомления подключены — вы будете получать оповещения по заявкам
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+//
+
+function LoginPage({ onLogin, settings, passwords }) {
+  const [branch, setBranch] = useState('');
+  const [selectedUser, setSelectedUser] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const cfg = settings || DEFAULT_SETTINGS;
+  const loginBranches = cfg.branches;
+  const branchUsers = useMemo(() => branch ? getBranchUsers(branch, cfg) : [], [branch, cfg]);
+
+  const handleBranchChange = (e) => {
+    setBranch(e.target.value);
+    setSelectedUser('');
+    setError('');
+  };
+
+  const handleLogin = () => {
+    if (!branch) { setError('Выберите филиал'); return; }
+    if (!selectedUser) { setError('Выберите сотрудника'); return; }
+    if (!password) { setError('Введите пароль'); return; }
+    const correctPw = (passwords || DEFAULT_PASSWORDS)[selectedUser] || 'imbir2026';
+    if (password !== correctPw) { setError('Неверный пароль'); return; }
+    setLoading(true);
+    const user = USERS.find(u => u.name === selectedUser);
+    setTimeout(() => { onLogin({ ...user, loginBranch: branch }); }, 700);
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center" style={{background:'linear-gradient(135deg,#fff5f0 0%,#f8f9fa 60%)'}}>
+      <div className="card p-10 w-full max-w-md anim-fade">
+        {/* Logo */}
+        <div className="flex flex-col items-center mb-8">
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style={{background:BRAND}}>
+            <span className="text-white text-3xl font-black">₸</span>
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900">ImbirPay</h1>
+          <p className="text-sm text-gray-500 mt-1">Система казначейских заявок · Imbir Group</p>
+        </div>
+
+        <div className="space-y-4">
+          {/* Step 1: Branch */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="w-5 h-5 rounded-full text-white text-xs flex items-center justify-center font-bold" style={{background:BRAND}}>1</span>
+                Филиал
+              </span>
+            </label>
+            <select value={branch} onChange={handleBranchChange} className="input-field">
+              <option value="">— Выберите филиал —</option>
+              {loginBranches.map(b => <option key={b} value={b}>{b}</option>)}
+            </select>
+          </div>
+
+          {/* Step 2: User (shown after branch selected) */}
+          {branch && (
+            <div className="anim-fade">
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-full text-white text-xs flex items-center justify-center font-bold" style={{background:BRAND}}>2</span>
+                  Сотрудник
+                </span>
+              </label>
+              <select value={selectedUser} onChange={e => { setSelectedUser(e.target.value); setError(''); }}
+                      className="input-field">
+                <option value="">— Выберите из списка —</option>
+                {branchUsers.map(u => (
+                  <option key={u.name} value={u.name}>{u.name} — {u.position}</option>
+                ))}
+              </select>
+              {branchUsers.length === 0 && (
+                <p className="text-xs text-amber-600 mt-1">Для этого филиала нет назначенных сотрудников</p>
+              )}
+            </div>
+          )}
+
+          {/* Step 3: Password (shown after user selected) */}
+          {selectedUser && (
+            <div className="anim-fade">
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-full text-white text-xs flex items-center justify-center font-bold" style={{background:BRAND}}>3</span>
+                  Пароль
+                </span>
+              </label>
+              <input type="password" className="input-field" placeholder="Введите пароль" autoFocus
+                     value={password} onChange={e => { setPassword(e.target.value); setError(''); }}
+                     onKeyDown={e => e.key==='Enter' && handleLogin()} />
+            </div>
+          )}
+
+          {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
+
+          <button className="btn-primary w-full mt-2" disabled={loading || !branch || !selectedUser || !password} onClick={handleLogin}>
+            {loading ? 'Вход...' : 'Войти в систему'}
+          </button>
+        </div>
+
+        <div className="mt-6 text-center">
+          <p className="text-xs text-gray-400">Также доступен вход через</p>
+          <div className="flex justify-center gap-3 mt-2">
+            <button className="btn-ghost text-xs py-2 px-4 border border-gray-200 rounded-lg" onClick={()=>setError('Google OAuth настраивается...')}>
+              🔵 Google OAuth
+            </button>
+            <button className="btn-ghost text-xs py-2 px-4 border border-gray-200 rounded-lg" onClick={()=>setError('Face ID доступен в мобильном приложении')}>
+              👤 Face ID
+            </button>
+          </div>
+        </div>
+
+        <p className="text-xs text-gray-400 text-center mt-6">ТОО «Imbir Group» · Конфиденциально</p>
+      </div>
+    </div>
+  );
+}
+
+//
+
+function TopBar({ user, activeTab, setActiveTab, onLogout, onChangePassword }) {
+  const isManagement = ['manager','cfo','treasurer'].includes(user.role);
+  const roleLabel = { manager:'Руководитель', cfo:'Финансовый директор', treasurer:'Казначей', initiator:'Инициатор' }[user.role];
+
+  return (
+    <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
+      <div className="max-w-screen-xl mx-auto px-6 h-16 flex items-center justify-between gap-4">
+        {/* Logo */}
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{background:BRAND}}>
+            <span className="text-white text-lg font-black">₸</span>
+          </div>
+          <div>
+            <div className="font-bold text-gray-900 text-base leading-tight">ImbirPay</div>
+            <div className="text-xs text-gray-400 leading-tight">Imbir Group</div>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <nav className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+          {isManagement && (
+            <button onClick={()=>setActiveTab('dashboard')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                      activeTab==='dashboard' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-800'}`}>
+              📊 Казначей
+            </button>
+          )}
+          <button onClick={()=>setActiveTab('form')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    activeTab==='form' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-800'}`}>
+            📝 {isManagement ? 'Заявка' : 'Новая заявка'}
+          </button>
+          {!isManagement && (
+            <button onClick={()=>setActiveTab('my')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                      activeTab==='my' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-800'}`}>
+              📋 Мои заявки
+            </button>
+          )}
+          {isManagement && (
+            <button onClick={()=>setActiveTab('settings')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                      activeTab==='settings' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-800'}`}>
+              ⚙️ Справочник
+            </button>
+          )}
+        </nav>
+
+        {/* User */}
+        <div className="flex items-center gap-3">
+          <div className="text-right">
+            <div className="text-sm font-semibold text-gray-900 leading-tight">{user.name}</div>
+            <div className="text-xs text-gray-500 leading-tight">{roleLabel}</div>
+          </div>
+          <button onClick={onChangePassword}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 text-base" title="Сменить пароль">
+            🔒
+          </button>
+          <button onClick={onLogout} className="btn-ghost text-xs py-1.5">Выйти</button>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+//
+
+function KPICards({ requests, filter, setFilter }) {
+  const stats = useMemo(() => ({
+    new:      requests.filter(r=>r.status==='new'),
+    manager:  requests.filter(r=>r.status==='manager'),
+    cfo:      requests.filter(r=>r.status==='cfo'),
+    approved: requests.filter(r=>r.status==='approved'),
+    paid:     requests.filter(r=>r.status==='paid'),
+    rejected: requests.filter(r=>r.status==='rejected'),
+  }), [requests]);
+
+  const cards = [
+    { key:'new',      label:'Новые',          icon:'🔵', colorDot:'#1A6BE8', border:'border-blue-200',   bg:'bg-blue-50' },
+    { key:'cfo',      label:'У финдиректора', icon:'💼', colorDot:'#C8820A', border:'border-yellow-200', bg:'bg-yellow-50' },
+    { key:'manager',  label:'У учредителя',   icon:'👔', colorDot:'#C8820A', border:'border-yellow-200', bg:'bg-yellow-50' },
+    { key:'approved', label:'Одобрено',        icon:'✅', colorDot:'#1B9963', border:'border-green-200',  bg:'bg-green-50' },
+    { key:'paid',     label:'Оплачено',        icon:'💳', colorDot:'#1A4DAB', border:'border-indigo-200', bg:'bg-indigo-50' },
+    { key:'rejected', label:'Отклонено',       icon:'❌', colorDot:'#C0392B', border:'border-red-200',    bg:'bg-red-50' },
+  ];
+
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+      {cards.map(c => {
+        const group = stats[c.key] || [];
+        const isActive = filter === c.key;
+        return (
+          <button key={c.key} onClick={()=>setFilter(isActive ? 'all' : c.key)}
+                  className={`card p-4 text-left transition-all cursor-pointer hover:shadow-md ${isActive ? `${c.border} ${c.bg} ring-2` : 'hover:border-gray-300'}`}
+                  style={isActive ? {ringColor: c.colorDot} : {}}>
+            <div className="text-xl mb-1">{c.icon}</div>
+            <div className="text-xs font-medium text-gray-500 mb-1 leading-tight">{c.label}</div>
+            <div className="text-2xl font-bold text-gray-900 leading-tight">{group.length}</div>
+            <div className="text-xs text-gray-500 mt-1 font-medium">{fmt(sumOf(group))}</div>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+//
+
+function PipelineBar({ requests }) {
+  const statuses = ['new','cfo','manager','approved','paid'];
+  const counts = Object.fromEntries(statuses.map(s=>[s, requests.filter(r=>r.status===s).length]));
+  const labels = { new:'Новые', cfo:'У финдиректора', manager:'У учредителя', approved:'Одобрено', paid:'Оплачено' };
+  const colors  = { new:'#1A6BE8', cfo:'#C8820A', manager:'#C8820A', approved:'#1B9963', paid:'#1A4DAB' };
+
+  return (
+    <div className="card p-4 mb-6 flex items-center gap-2 overflow-x-auto">
+      {statuses.map((s, i) => (
+        <React.Fragment key={s}>
+          <div className="flex flex-col items-center gap-1 flex-shrink-0">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold"
+                 style={{background: counts[s] > 0 ? colors[s] : '#d1d5db'}}>
+              {counts[s]}
+            </div>
+            <span className="text-xs text-gray-500 whitespace-nowrap">{labels[s]}</span>
+          </div>
+          {i < statuses.length-1 && (
+            <div className="flex-1 h-0.5 min-w-4" style={{background:'#e5e7eb'}} />
+          )}
+        </React.Fragment>
+      ))}
+      <div className="ml-4 flex-shrink-0">
+        <div className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold bg-red-400">
+          {requests.filter(r=>r.status==='rejected').length}
+        </div>
+        <span className="text-xs text-gray-500">Отклонено</span>
+      </div>
+    </div>
+  );
+}
+
+//
+
+function FilterBar({ filter, setFilter, search, setSearch, onExportCSV, selectedIds, requests, onBulkApprove, onBulkReject, user }) {
+  const tabs = [
+    {key:'all', label:'Все'},
+    {key:'new', label:'Новые'},
+    {key:'manager', label:'У руководителя'},
+    {key:'cfo', label:'У финдиректора'},
+    {key:'approved', label:'Одобрено'},
+    {key:'paid', label:'Оплачено'},
+    {key:'rejected', label:'Отклонено'},
+  ];
+  const isManagement = ['manager','cfo','treasurer'].includes(user.role);
+
+  return (
+    <div className="space-y-3 mb-4">
+      {/* Status tabs */}
+      <div className="flex flex-wrap gap-1">
+        {tabs.map(t => (
+          <button key={t.key} onClick={()=>setFilter(t.key)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    filter===t.key ? 'text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                  style={filter===t.key ? {background:BRAND} : {}}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Search + actions row */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-48">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+          <input type="text" placeholder="Поиск по ID, имени, назначению..."
+                 value={search} onChange={e=>setSearch(e.target.value)}
+                 className="input-field pl-9 py-2" />
+        </div>
+
+        {selectedIds.length > 0 && isManagement && (
+          <div className="flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-xl px-3 py-1.5">
+            <span className="text-xs text-orange-700 font-medium">Выбрано: {selectedIds.length}</span>
+            <button onClick={onBulkApprove} className="btn-primary text-xs py-1.5 px-3">✅ Одобрить все</button>
+            <button onClick={onBulkReject}  className="btn-danger  text-xs py-1.5 px-3">✕ Отклонить</button>
+          </div>
+        )}
+
+        <button onClick={onExportCSV} className="btn-outline text-xs py-2 px-4 flex items-center gap-2">
+          ⬇️ Выгрузить CSV
+        </button>
+      </div>
+    </div>
+  );
+}
+
+//
+
+function RequestsTable({ requests, onSelectRow, selectedIds, onToggleSelect, onToggleAll, onQuickApprove, onQuickReject, user }) {
+  const isManagement = ['manager','cfo','treasurer'].includes(user.role);
+  const allChecked = requests.length > 0 && requests.every(r => selectedIds.includes(r.id));
+
+  if (!requests.length) {
+    return (
+      <div className="card py-16 text-center text-gray-400">
+        <div className="text-4xl mb-3">📭</div>
+        <p className="font-medium text-gray-500">Заявок не найдено</p>
+        <p className="text-sm mt-1">Попробуйте изменить фильтр или поиск</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="card overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="border-b border-gray-100 bg-gray-50">
+              {isManagement && (
+                <th className="px-4 py-3 text-left w-10">
+                  <input type="checkbox" className="checkbox-orange" checked={allChecked}
+                         onChange={e=>onToggleAll(e.target.checked)} />
+                </th>
+              )}
+              <th className="px-4 py-3 text-left">Тип</th>
+              <th className="px-4 py-3 text-left">ID / Дата</th>
+              <th className="px-4 py-3 text-left">Инициатор</th>
+              <th className="px-4 py-3 text-left">Назначение</th>
+              <th className="px-4 py-3 text-left">Файл / Название</th>
+              <th className="px-4 py-3 text-right">Сумма</th>
+              <th className="px-4 py-3 text-left">Категория</th>
+              <th className="px-4 py-3 text-left">Срок</th>
+              <th className="px-4 py-3 text-left">Статус</th>
+              {isManagement && <th className="px-4 py-3 text-center">Действия</th>}
+            </tr>
+          </thead>
+          <tbody>
+            {requests.map(req => (
+              <tr key={req.id} className="border-b border-gray-50 cursor-pointer transition-colors"
+                  onClick={e=>{ if(e.target.tagName==='INPUT'||e.target.tagName==='BUTTON') return; onSelectRow(req); }}>
+                {isManagement && (
+                  <td className="px-4 py-3">
+                    <input type="checkbox" className="checkbox-orange" checked={selectedIds.includes(req.id)}
+                           onChange={()=>onToggleSelect(req.id)} onClick={e=>e.stopPropagation()} />
+                  </td>
+                )}
+                {/* Type */}
+                <td className="px-4 py-3">
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-semibold ${req.type==='invoice'?'type-badge-invoice':'type-badge-advance'}`}>
+                    {req.type==='invoice'?'🧾':'💵'} {req.type==='invoice'?'Счёт':'Подотч.'}
+                  </span>
+                </td>
+                {/* ID */}
+                <td className="px-4 py-3">
+                  <div className="text-xs font-mono font-semibold text-gray-700 flex items-center gap-1">
+                    {req.id}
+                    {req.isDup && <span className="dup-badge">DUP</span>}
+                  </div>
+                  <div className="text-xs text-gray-400">{fmtD(req.createdAt)}</div>
+                </td>
+                {/* Initiator */}
+                <td className="px-4 py-3">
+                  <div className="text-sm font-medium text-gray-800 whitespace-nowrap">{req.initiatorName}</div>
+                  <div className="text-xs text-gray-400">{req.branch}</div>
+                </td>
+                {/* Purpose */}
+                <td className="px-4 py-3 max-w-48">
+                  <div className="text-xs text-gray-700 line-clamp-2 leading-relaxed">{req.purpose}</div>
+                </td>
+                {/* File/Name */}
+                <td className="px-4 py-3">
+                  {req.type==='invoice'
+                    ? <span className="text-xs text-blue-600 flex items-center gap-1">📎 <span className="truncate max-w-28" title={req.fileName}>{req.fileName}</span></span>
+                    : <span className="text-xs font-mono text-gray-700">{req.requestName}</span>
+                  }
+                </td>
+                {/* Amount */}
+                <td className="px-4 py-3 text-right">
+                  <span className="text-sm font-bold text-gray-900 whitespace-nowrap">{fmt(req.amount)}</span>
+                </td>
+                {/* Category */}
+                <td className="px-4 py-3">
+                  <span className="text-xs text-gray-600">{getCategoryIcon(req.category)} {getCategoryLabel(req.category)}</span>
+                </td>
+                {/* Due date */}
+                <td className="px-4 py-3">
+                  <div className="text-xs text-gray-700 whitespace-nowrap">{fmtD(req.dueDate)}</div>
+                  <PriorityBadge priority={req.priority} />
+                </td>
+                {/* Status */}
+                <td className="px-4 py-3"><StatusBadge status={req.status} /></td>
+                {/* Actions */}
+                {isManagement && (
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-1 justify-center" onClick={e=>e.stopPropagation()}>
+                      {canActOn(user.role, req.status) && (
+                        <>
+                          <button onClick={()=>onQuickApprove(req)}
+                                  className="w-8 h-8 rounded-lg bg-green-50 text-green-600 flex items-center justify-center hover:bg-green-100 text-sm font-bold"
+                                  title={user.role==='treasurer' ? 'Оплатить' : 'Одобрить'}>
+                            {user.role==='treasurer' ? '💳' : '✓'}
+                          </button>
+                          <button onClick={()=>onQuickReject(req)}
+                                  className="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-100 text-sm font-bold" title="Отклонить">
+                            ✕
+                          </button>
+                        </>
+                      )}
+                      <button onClick={()=>onSelectRow(req)}
+                              className="w-8 h-8 rounded-lg bg-gray-50 text-gray-600 flex items-center justify-center hover:bg-gray-100 text-sm" title="Детали">
+                        →
+                      </button>
+                    </div>
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="px-4 py-2 border-t border-gray-100 flex justify-between items-center">
+        <span className="text-xs text-gray-400">{requests.length} заявок · Итого: {fmt(sumOf(requests))}</span>
+      </div>
+    </div>
+  );
+}
+
+//
+
+function ApprovalChainView({ req }) {
+  const getStepStatus = (chainKey) => {
+    const flowIdx = STATUS_FLOW.indexOf(req.status);
+    const chainMap = { cfo:1, manager:2, treasurer:3 };
+    const stepIdx = chainMap[chainKey];
+    if (req.status === 'rejected') return 'rejected';
+    if (flowIdx > stepIdx) return 'done';
+    if (flowIdx === stepIdx) return 'active';
+    return 'pending';
+  };
+
+  const historyFor = (chainKey) => {
+    const actionWords = { cfo:['Одобрено (1-е','Отклонено'], manager:['Одобрено (2-е','Отклонено'], treasurer:['Оплачено','Отклонено'] };
+    const words = actionWords[chainKey] || [];
+    return req.history.filter(h => words.some(w=>h.action.includes(w)));
+  };
+
+  return (
+    <div className="space-y-3">
+      {CHAIN.map((c, i) => {
+        const st = getStepStatus(c.key);
+        const hist = historyFor(c.key);
+        const colors = {
+          done: { border:'#1B9963', bg:'#E8F5ED', dot:'#1B9963', text:'#1B9963', icon:'✅' },
+          active: { border:BRAND, bg:'#FFF5F0', dot:BRAND, text:BRAND, icon:'⏳' },
+          pending: { border:'#e5e7eb', bg:'#f9fafb', dot:'#d1d5db', text:'#9ca3af', icon:'⭕' },
+          rejected: { border:'#C0392B', bg:'#FDECEA', dot:'#C0392B', text:'#C0392B', icon:'❌' },
+        }[st];
+        return (
+          <div key={c.key} className="chain-step" style={{borderColor:colors.border, background:colors.bg}}>
+            <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm flex-shrink-0"
+                 style={{background:colors.dot, color:'#fff'}}>
+              {i+1}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-gray-800">{c.name}</span>
+                <span className="text-xs" style={{color:colors.text}}>{colors.icon} {c.step}</span>
+              </div>
+              <div className="text-xs text-gray-500">{c.title}</div>
+              {hist.map((h,j)=>(
+                <div key={j} className="text-xs mt-1" style={{color:colors.text}}>
+                  {fmtDT(h.date)} — {h.action}
+                  {h.comment && <span className="text-gray-500"> · "{h.comment}"</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function Drawer({ req, onClose, onApprove, onReject, user, onUpdateComment }) {
+  const [comment, setComment] = useState(req.treasuryComment || '');
+  const [rejectReason, setRejectReason] = useState('');
+  const [showRejectForm, setShowRejectForm] = useState(false);
+  const isManagement = ['manager','cfo','treasurer'].includes(user.role);
+  const canAct = canActOn(user.role, req.status);
+  const isPayAction = user.role === 'treasurer';
+  const approveLabel = isPayAction ? '💳 Оплатить' : '✅ Одобрить';
+
+  const doApprove = () => {
+    onUpdateComment(req.id, comment);
+    onApprove(req, user.name, comment);
+    onClose();
+  };
+
+  const doReject = () => {
+    if (!rejectReason.trim()) return;
+    onUpdateComment(req.id, comment);
+    onReject(req, user.name, rejectReason);
+    onClose();
+  };
+
+  return (
+    <>
+      <div className="drawer-overlay" onClick={onClose} />
+      <div className="drawer-panel anim-slide-right flex flex-col">
+        {/* Header */}
+        <div className="flex items-start justify-between p-6 border-b border-gray-100">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-semibold ${req.type==='invoice'?'type-badge-invoice':'type-badge-advance'}`}>
+                {req.type==='invoice'?'🧾 Оплата счёта':'💵 Выдача подотчёт'}
+              </span>
+              {req.isDup && <span className="dup-badge">DUP</span>}
+            </div>
+            <div className="text-3xl font-black text-gray-900">{fmt(req.amount)}</div>
+            <div className="text-xs font-mono text-gray-400 mt-0.5">{req.id}</div>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 text-xl">×</button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          {/* Status */}
+          <div className="flex items-center gap-3">
+            <StatusBadge status={req.status} />
+            <PriorityBadge priority={req.priority} />
+          </div>
+
+          {/* Approval Chain */}
+          <div>
+            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Цепочка согласования</h4>
+            <ApprovalChainView req={req} />
+          </div>
+
+          {/* Basic info */}
+          <div>
+            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Инициатор</h4>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div><span className="text-gray-500">ФИО:</span> <span className="font-medium text-gray-800">{req.initiatorName}</span></div>
+              <div><span className="text-gray-500">Должность:</span> <span className="font-medium text-gray-800">{req.initiatorPosition}</span></div>
+              <div><span className="text-gray-500">Филиал:</span> <span className="font-medium text-gray-800">{req.branch}</span></div>
+              <div><span className="text-gray-500">Категория:</span> <span className="font-medium text-gray-800">{getCategoryIcon(req.category)} {getCategoryLabel(req.category)}</span></div>
+              <div><span className="text-gray-500">Срок оплаты:</span> <span className="font-medium text-gray-800">{fmtD(req.dueDate)}</span></div>
+              <div><span className="text-gray-500">Создана:</span> <span className="font-medium text-gray-800">{fmtD(req.createdAt)}</span></div>
+            </div>
+          </div>
+
+          {/* Type-specific */}
+          {req.type==='invoice' ? (
+            <div>
+              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Счёт</h4>
+              <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-xl border border-blue-100">
+                <span className="text-2xl">📎</span>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold text-blue-700 truncate">{req.fileName}</div>
+                  <div className="text-xs text-blue-500">Загружен инициатором</div>
+                </div>
+                {req.fileData ? (
+                  <a href={req.fileData} target="_blank" rel="noopener noreferrer"
+                     className="flex-shrink-0 btn-outline text-xs py-1.5 px-3 no-underline">
+                    👁 Открыть
+                  </a>
+                ) : (
+                  <span className="text-xs text-blue-300 flex-shrink-0">предпросмотр недоступен</span>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div>
+              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Подотчёт</h4>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div><span className="text-gray-500">Название:</span> <span className="font-mono font-medium text-gray-800">{req.requestName}</span></div>
+                <div><span className="text-gray-500">Получатель:</span> <span className="font-medium text-gray-800">{req.recipient}</span></div>
+                <div><span className="text-gray-500">Форма выдачи:</span> <span className="font-medium text-gray-800">{req.paymentForm}</span></div>
+                <div><span className="text-gray-500">Период:</span> <span className="font-medium text-gray-800">{fmtD(req.periodFrom)} – {fmtD(req.periodTo)}</span></div>
+              </div>
+            </div>
+          )}
+
+          {/* Purpose */}
+          <div>
+            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Назначение и обоснование</h4>
+            <p className="text-sm text-gray-700 bg-gray-50 rounded-xl p-3 leading-relaxed border border-gray-100">{req.purpose}</p>
+          </div>
+
+          {/* History */}
+          <div>
+            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">История изменений</h4>
+            <div className="space-y-2">
+              {req.history.map((h,i)=>(
+                <div key={i} className="flex gap-3 text-xs">
+                  <div className="w-1.5 h-1.5 rounded-full bg-gray-300 mt-1.5 flex-shrink-0" />
+                  <div>
+                    <span className="text-gray-500">{fmtDT(h.date)}</span>
+                    <span className="mx-1.5 text-gray-300">·</span>
+                    <span className="font-medium text-gray-700">{h.actor}</span>
+                    <span className="mx-1.5 text-gray-300">·</span>
+                    <span className="text-gray-600">{h.action}</span>
+                    {h.comment && <span className="text-gray-400"> — "{h.comment}"</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Treasury comment */}
+          {isManagement && (
+            <div>
+              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Комментарий казначея</h4>
+              <textarea className="input-field text-sm resize-none" rows="2"
+                        placeholder="Добавить комментарий..."
+                        value={comment} onChange={e=>setComment(e.target.value)} />
+            </div>
+          )}
+
+          {/* Reject form */}
+          {showRejectForm && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 space-y-3">
+              <p className="text-sm font-medium text-red-700">Причина отклонения (обязательно)</p>
+              <textarea className="input-field text-sm resize-none" rows="2"
+                        placeholder="Укажите причину..." autoFocus
+                        value={rejectReason} onChange={e=>setRejectReason(e.target.value)} />
+              <div className="flex gap-2">
+                <button onClick={doReject} disabled={!rejectReason.trim()} className="btn-danger text-xs py-2 px-4">Отклонить</button>
+                <button onClick={()=>setShowRejectForm(false)} className="btn-ghost text-xs py-2 px-3">Отмена</button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer actions */}
+        {canAct && !showRejectForm && (
+          <div className="p-6 border-t border-gray-100 flex gap-3">
+            <button onClick={doApprove} className="btn-primary flex-1">{approveLabel}</button>
+            <button onClick={()=>setShowRejectForm(true)} className="btn-danger flex-1">✕ Отклонить</button>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+//
+
+function WhatsAppSettings({ waContacts }) {
+  const configured = USERS.filter(u => waContacts[u.name]?.phone && waContacts[u.name]?.apikey);
+  const notConfigured = USERS.filter(u => !waContacts[u.name]?.phone || !waContacts[u.name]?.apikey);
+  const flow = [
+    { event:'Новая заявка', to:'Алия Кенжебекова' },
+    { event:'Финдир. одобрил', to:'Мусина Дина' },
+    { event:'Учредитель одобрил', to:'Гульнар Сулейменова' },
+    { event:'Оплачено / Отклонено', to:'Инициатор заявки' },
+  ];
+
+  return (
+    <div className="card p-6 mt-6">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+            <span className="text-xl">📱</span> WhatsApp уведомления
+            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${configured.length > 0 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+              {configured.length} из {USERS.length} подключено
+            </span>
+          </h3>
+          <p className="text-xs text-gray-500 mt-0.5">Каждый сотрудник настраивает уведомления самостоятельно в своём профиле (кнопка 👤 вверху)</p>
+        </div>
+      </div>
+
+      {/* Flow */}
+      <div className="flex flex-wrap gap-2 mb-5 text-xs">
+        {flow.map((f,i) => (
+          <div key={i} className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200">
+            <span className="text-gray-500">{f.event}</span>
+            <span className="text-orange-500 font-bold">→</span>
+            <span className={`font-semibold ${waContacts[f.to]?.phone ? 'text-green-700' : 'text-gray-400'}`}>
+              {waContacts[f.to]?.phone ? '🟢' : '⚪'} {f.to}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Connected */}
+        {configured.length > 0 && (
+          <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+            <div className="text-xs font-semibold text-green-700 mb-2">✅ Подключены ({configured.length})</div>
+            <div className="space-y-1">
+              {configured.map(u => (
+                <div key={u.name} className="flex items-center gap-2 text-sm">
+                  <span className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
+                  <span className="text-gray-700">{u.name}</span>
+                  <span className="text-xs text-gray-400 truncate">{waContacts[u.name].phone}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {/* Not connected */}
+        {notConfigured.length > 0 && (
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+            <div className="text-xs font-semibold text-gray-500 mb-2">⚪ Не подключены ({notConfigured.length})</div>
+            <div className="space-y-1">
+              {notConfigured.map(u => (
+                <div key={u.name} className="flex items-center gap-2 text-sm">
+                  <span className="w-2 h-2 rounded-full bg-gray-300 flex-shrink-0" />
+                  <span className="text-gray-400">{u.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+//
+
+function FirebaseSettings({ fbConfig, onSave, isConnected }) {
+  const [raw, setRaw] = useState(fbConfig ? JSON.stringify(fbConfig, null, 2) : '');
+  const [status, setStatus] = useState('');
+  const [testing, setTesting] = useState(false);
+
+  const handleTest = async () => {
+    setTesting(true); setStatus('');
+    try {
+      const cfg = JSON.parse(raw);
+      const ok = await fbTest(cfg);
+      setStatus(ok ? 'ok' : 'err');
+    } catch { setStatus('parse'); }
+    setTesting(false);
+  };
+
+  const handleSave = () => {
+    try { const cfg = JSON.parse(raw); onSave(cfg); setStatus('saved'); }
+    catch { setStatus('parse'); }
+  };
+
+  const msg = { ok:'✅ Подключено! Нажмите Сохранить', err:'❌ Ошибка — проверьте config и правила БД', parse:'❌ Неверный JSON', saved:'✅ Сохранено — перезагрузите страницу' }[status] || '';
+
+  return (
+    <div className="card p-6 mt-6">
+      <div className="flex items-center gap-3 mb-4">
+        <span className="text-2xl">🔥</span>
+        <div>
+          <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+            Firebase — общая база данных
+            {isConnected
+              ? <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">🟢 Подключено</span>
+              : <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-medium">⚪ Не настроено</span>}
+          </h3>
+          <p className="text-xs text-gray-500 mt-0.5">Все пользователи видят одни и те же заявки в реальном времени</p>
+        </div>
+      </div>
+
+      {/* Instructions */}
+      <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 text-xs text-orange-800 mb-4">
+        <div className="font-semibold mb-2">📋 Как получить Firebase Config (бесплатно, 2 мин):</div>
+        <ol className="space-y-1">
+          <li>1. Откройте <span className="font-mono font-bold">console.firebase.google.com</span> → Создать проект</li>
+          <li>2. Введите имя «imbir-pay» → Создать</li>
+          <li>3. В проекте: <b>Build → Realtime Database → Create database → Start in test mode</b></li>
+          <li>4. Слева нажмите ⚙️ <b>Project settings → General → Your apps → Web</b></li>
+          <li>5. Зарегистрируйте приложение (любое имя) → скопируйте объект <b>firebaseConfig</b></li>
+          <li>6. Вставьте сюда ↓</li>
+        </ol>
+      </div>
+
+      <div className="mb-3">
+        <label className="block text-sm font-medium text-gray-700 mb-1.5">Firebase Config (JSON)</label>
+        <textarea className="input-field font-mono text-xs resize-none" rows="8"
+                  placeholder={`{\n  "apiKey": "AIza...",\n  "authDomain": "imbir-pay.firebaseapp.com",\n  "databaseURL": "https://imbir-pay-default-rtdb.firebaseio.com",\n  "projectId": "imbir-pay",\n  "storageBucket": "imbir-pay.appspot.com",\n  "messagingSenderId": "123...",\n  "appId": "1:123...:web:abc..."\n}`}
+                  value={raw} onChange={e=>{ setRaw(e.target.value); setStatus(''); }} />
+      </div>
+
+      {msg && <p className={`text-sm px-3 py-2 rounded-lg mb-3 ${status==='ok'||status==='saved' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>{msg}</p>}
+
+      <div className="flex gap-3">
+        <button onClick={handleTest} disabled={testing || !raw.trim()} className="btn-outline flex-1 text-sm">
+          {testing ? '⏳ Проверка...' : '🔌 Тест соединения'}
+        </button>
+        <button onClick={handleSave} disabled={!raw.trim()} className="btn-primary flex-1 text-sm">
+          💾 Сохранить и подключить
+        </button>
+      </div>
+      {isConnected && (
+        <button onClick={()=>{ onSave(null); setRaw(''); setStatus(''); }}
+                className="w-full mt-2 btn-ghost text-xs text-red-500">
+          Отключить Firebase (вернуться к localStorage)
+        </button>
+      )}
+    </div>
+  );
+}
+
+function SettingsView({ settings, setSettings, passwords, onUpdatePassword, waContacts, onUpdateWA, fbConfig, onSaveFB, fbConnected }) {
+  const [editBranch, setEditBranch] = useState(null); // branch name being edited
+  const [newBranchName, setNewBranchName] = useState('');
+  const [showAddBranch, setShowAddBranch] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const allInitiators = USERS.filter(u => u.role === 'initiator');
+
+  const save = (newSettings) => {
+    setSettings(newSettings);
+    saveSettings(newSettings);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const toggleAllBranchUser = (name) => {
+    const cur = settings.allBranchUsers;
+    const next = cur.includes(name) ? cur.filter(n => n !== name) : [...cur, name];
+    save({ ...settings, allBranchUsers: next });
+  };
+
+  const toggleBranchUser = (branch, name) => {
+    const cur = settings.branchSpecific[branch] || [];
+    const next = cur.includes(name) ? cur.filter(n => n !== name) : [...cur, name];
+    const newSpec = { ...settings.branchSpecific, [branch]: next };
+    save({ ...settings, branchSpecific: newSpec });
+  };
+
+  const addBranch = () => {
+    const name = newBranchName.trim();
+    if (!name || settings.branches.includes(name)) return;
+    save({
+      ...settings,
+      branches: [...settings.branches, name],
+      branchSpecific: { ...settings.branchSpecific, [name]: [] },
+    });
+    setNewBranchName('');
+    setShowAddBranch(false);
+  };
+
+  const removeBranch = (branch) => {
+    if (branch === 'Головной офис') return;
+    if (!window.confirm(`Удалить филиал «${branch}»?`)) return;
+    const { [branch]: _, ...rest } = settings.branchSpecific;
+    save({ ...settings, branches: settings.branches.filter(b => b !== branch), branchSpecific: rest });
+    if (editBranch === branch) setEditBranch(null);
+  };
+
+  const operationalBranches = settings.branches.filter(b => b !== 'Головной офис');
+  const selectedUsers = editBranch ? (settings.branchSpecific[editBranch] || []) : [];
+  const allBranchSet = new Set(settings.allBranchUsers);
+
+  return (
+    <div className="max-w-screen-xl mx-auto px-6 py-8">
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-gray-900">Справочник</h2>
+          <p className="text-sm text-gray-500 mt-0.5">Управление филиалами и ответственными сотрудниками</p>
+        </div>
+        {saved && (
+          <div className="bg-green-50 border border-green-200 text-green-700 text-sm font-medium px-4 py-2 rounded-xl anim-fade">
+            ✅ Сохранено
+          </div>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        {/* Left: Branch list */}
+        <div className="space-y-4">
+          <div className="card p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-gray-800">🏢 Филиалы</h3>
+              <button onClick={() => setShowAddBranch(true)}
+                      className="btn-outline text-xs py-1.5 px-3">+ Добавить</button>
+            </div>
+
+            {showAddBranch && (
+              <div className="mb-4 p-4 bg-orange-50 border border-orange-200 rounded-xl space-y-2 anim-fade">
+                <input type="text" className="input-field text-sm" placeholder="Название нового филиала"
+                       value={newBranchName} onChange={e => setNewBranchName(e.target.value)}
+                       onKeyDown={e => e.key === 'Enter' && addBranch()} autoFocus />
+                <div className="flex gap-2">
+                  <button onClick={addBranch} disabled={!newBranchName.trim()} className="btn-primary text-xs py-1.5 px-3">Добавить</button>
+                  <button onClick={() => { setShowAddBranch(false); setNewBranchName(''); }} className="btn-ghost text-xs py-1.5 px-3">Отмена</button>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-1">
+              {/* Головной офис */}
+              <button onClick={() => setEditBranch('Головной офис')}
+                      className={`w-full flex items-center justify-between p-3 rounded-xl transition-all text-left ${
+                        editBranch === 'Головной офис' ? 'bg-orange-50 border border-orange-200' : 'hover:bg-gray-50 border border-transparent'}`}>
+                <div>
+                  <div className="text-sm font-medium text-gray-800">🏛 Головной офис</div>
+                  <div className="text-xs text-gray-400 mt-0.5">
+                    {(settings.branchSpecific['Головной офис'] || []).length} сотр. + {settings.allBranchUsers.length} глобальных
+                  </div>
+                </div>
+                <span className="text-gray-400 text-sm">›</span>
+              </button>
+
+              <div className="border-t border-gray-100 my-2" />
+
+              {operationalBranches.map(branch => {
+                const specific = settings.branchSpecific[branch] || [];
+                const total = specific.length + settings.allBranchUsers.length;
+                return (
+                  <div key={branch} className={`flex items-center gap-2 p-3 rounded-xl transition-all border ${
+                    editBranch === branch ? 'bg-orange-50 border-orange-200' : 'border-transparent hover:bg-gray-50'}`}>
+                    <button className="flex-1 text-left" onClick={() => setEditBranch(branch)}>
+                      <div className="text-sm font-medium text-gray-800">{branch}</div>
+                      <div className="text-xs text-gray-400 mt-0.5">
+                        {specific.length > 0
+                          ? specific.join(', ').substring(0, 40) + (specific.join(', ').length > 40 ? '…' : '')
+                          : 'Только глобальные'}
+                        {' · '}{total} чел.
+                      </div>
+                    </button>
+                    <button onClick={() => removeBranch(branch)}
+                            className="w-7 h-7 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all text-xs">✕</button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Global users section */}
+          <div className="card p-6">
+            <h3 className="font-semibold text-gray-800 mb-1">🌐 Доступ ко всем филиалам</h3>
+            <p className="text-xs text-gray-500 mb-4">Эти сотрудники видят форму из любого филиала</p>
+            <div className="space-y-2">
+              {allInitiators.map(u => (
+                <label key={u.name} className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 cursor-pointer">
+                  <input type="checkbox" className="checkbox-orange"
+                         checked={allBranchSet.has(u.name)}
+                         onChange={() => toggleAllBranchUser(u.name)} />
+                  <div>
+                    <div className="text-sm font-medium text-gray-800">{u.name}</div>
+                    <div className="text-xs text-gray-500">{u.position}</div>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Right: Edit selected branch */}
+        <div>
+          {editBranch ? (
+            <div className="card p-6 anim-fade">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="font-semibold text-gray-800">Ответственные: {editBranch}</h3>
+                  <p className="text-xs text-gray-500 mt-0.5">Отмеченные + глобальные видят этот филиал при входе</p>
+                </div>
+                <button onClick={() => setEditBranch(null)} className="btn-ghost text-xs py-1.5 px-3">✕</button>
+              </div>
+
+              {/* Global users (read-only display) */}
+              <div className="mb-4 p-3 bg-blue-50 rounded-xl border border-blue-100">
+                <div className="text-xs font-semibold text-blue-600 mb-2">🌐 Глобальные (по умолчанию)</div>
+                <div className="flex flex-wrap gap-2">
+                  {settings.allBranchUsers.map(name => (
+                    <span key={name} className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-lg">{name}</span>
+                  ))}
+                  {settings.allBranchUsers.length === 0 && <span className="text-xs text-blue-400">Не назначены</span>}
+                </div>
+              </div>
+
+              {/* Branch-specific users */}
+              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Ответственные за филиал</div>
+              <div className="space-y-1">
+                {USERS.filter(u => u.role === 'initiator').map(u => {
+                  const isGlobal = allBranchSet.has(u.name);
+                  const isChecked = selectedUsers.includes(u.name);
+                  return (
+                    <label key={u.name}
+                           className={`flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-all ${
+                             isChecked ? 'bg-orange-50 border border-orange-200' : 'hover:bg-gray-50 border border-transparent'
+                           } ${isGlobal ? 'opacity-50' : ''}`}>
+                      <input type="checkbox" className="checkbox-orange"
+                             checked={isChecked || isGlobal}
+                             disabled={isGlobal}
+                             onChange={() => !isGlobal && toggleBranchUser(editBranch, u.name)} />
+                      <div className="flex-1">
+                        <div className="text-sm font-medium text-gray-800">{u.name}</div>
+                        <div className="text-xs text-gray-500">{u.position}</div>
+                      </div>
+                      {isGlobal && <span className="text-xs text-blue-500 bg-blue-50 px-2 py-0.5 rounded-lg">глобальный</span>}
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="card p-12 flex flex-col items-center justify-center text-center text-gray-400">
+              <div className="text-4xl mb-3">👈</div>
+              <p className="font-medium text-gray-500">Выберите филиал</p>
+              <p className="text-sm mt-1">для редактирования ответственных</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Firebase shared database */}
+      <FirebaseSettings fbConfig={fbConfig} onSave={onSaveFB} isConnected={fbConnected} />
+
+      {/* WhatsApp notifications section — read-only overview, edit via 👤 профиль */}
+      <WhatsAppSettings waContacts={waContacts || {}} />
+
+      {/* Password management section */}
+      <div className="mt-6">
+        <div className="card p-6">
+          <h3 className="font-semibold text-gray-800 mb-1">🔒 Пароли пользователей</h3>
+          <p className="text-xs text-gray-500 mb-5">Администратор может сбросить пароль любого сотрудника</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {USERS.map(u => {
+              const pw = (passwords || DEFAULT_PASSWORDS)[u.name] || 'imbir2026';
+              const isDefault = pw === 'imbir2026';
+              return (
+                <UserPasswordRow key={u.name} user={u} isDefault={isDefault}
+                                 onReset={(name, newPw) => onUpdatePassword(name, newPw)} />
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function UserPasswordRow({ user, isDefault, onReset }) {
+  const [editing, setEditing] = useState(false);
+  const [newPw,   setNewPw]   = useState('');
+  const [show,    setShow]    = useState(false);
+  const [saved,   setSaved]   = useState(false);
+
+  const handleReset = () => {
+    if (!newPw.trim() || newPw.length < 4) return;
+    onReset(user.name, newPw);
+    setSaved(true);
+    setEditing(false);
+    setNewPw('');
+    setTimeout(() => setSaved(false), 2500);
+  };
+
+  const handleResetToDefault = () => {
+    onReset(user.name, 'imbir2026');
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
+  };
+
+  const roleColors = { manager:'bg-purple-100 text-purple-700', cfo:'bg-blue-100 text-blue-700', treasurer:'bg-green-100 text-green-700', initiator:'bg-gray-100 text-gray-600' };
+
+  return (
+    <div className={`p-4 rounded-xl border transition-all ${editing ? 'border-orange-200 bg-orange-50' : 'border-gray-100 bg-gray-50'}`}>
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <div className="min-w-0">
+          <div className="text-sm font-semibold text-gray-800 truncate">{user.name}</div>
+          <div className="text-xs text-gray-500 truncate">{user.position}</div>
+        </div>
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${roleColors[user.role]}`}>
+            { {manager:'Учред.', cfo:'Финдир.', treasurer:'Казначей', initiator:''}[user.role] }
+          </span>
+          {saved && <span className="text-xs text-green-600 font-medium">✓</span>}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-1.5 mb-2">
+        <div className={`w-2 h-2 rounded-full flex-shrink-0 ${isDefault ? 'bg-yellow-400' : 'bg-green-500'}`} />
+        <span className="text-xs text-gray-500">{isDefault ? 'Стандартный пароль' : 'Пароль изменён'}</span>
+      </div>
+
+      {editing ? (
+        <div className="space-y-2">
+          <div className="relative">
+            <input type={show ? 'text' : 'password'} className="input-field text-xs py-2 pr-8"
+                   placeholder="Новый пароль (мин. 4 симв.)"
+                   value={newPw} onChange={e => setNewPw(e.target.value)}
+                   onKeyDown={e => e.key==='Enter' && handleReset()} autoFocus />
+            <button type="button" onClick={() => setShow(s=>!s)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">{show?'🙈':'👁'}</button>
+          </div>
+          <div className="flex gap-1.5">
+            <button onClick={handleReset} disabled={newPw.length < 4}
+                    className="btn-primary text-xs py-1.5 px-3 flex-1">Сохранить</button>
+            <button onClick={() => { setEditing(false); setNewPw(''); }}
+                    className="btn-ghost text-xs py-1.5 px-2">✕</button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex gap-1.5">
+          <button onClick={() => setEditing(true)}
+                  className="btn-outline text-xs py-1.5 px-3 flex-1">✏️ Задать</button>
+          {!isDefault && (
+            <button onClick={handleResetToDefault}
+                    className="btn-ghost text-xs py-1.5 px-2 border border-gray-200" title="Сбросить до imbir2026">↺</button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+//
+
+function DashboardView({ requests, user, onUpdate }) {
+  const [filter, setFilter] = useState('all');
+  const [search, setSearch] = useState('');
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [drawerReq, setDrawerReq] = useState(null);
+
+  const filtered = useMemo(() => {
+    let arr = requests;
+    if (filter !== 'all') arr = arr.filter(r => r.status === filter);
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      arr = arr.filter(r =>
+        r.id.toLowerCase().includes(q) ||
+        r.initiatorName.toLowerCase().includes(q) ||
+        r.purpose.toLowerCase().includes(q) ||
+        (r.fileName||'').toLowerCase().includes(q) ||
+        (r.requestName||'').toLowerCase().includes(q)
+      );
+    }
+    return arr.slice().sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+  }, [requests, filter, search]);
+
+  const advanceStatus = (req, actorName, comment='') => {
+    const idx = STATUS_FLOW.indexOf(req.status);
+    const next = idx < STATUS_FLOW.length-1 ? STATUS_FLOW[idx+1] : req.status;
+    const actionLabels = {
+      cfo:     'Одобрено (1-е согласование)',
+      manager: 'Одобрено (2-е согласование)',
+      approved:'Одобрено финансовым блоком',
+      paid:    'Оплачено',
+    };
+    const histEntry = { date: new Date().toISOString(), actor: actorName,
+      action: actionLabels[next] || `Переведено в "${STATUSES[next]?.label}"`, comment };
+    return { ...req, status: next, treasuryComment: comment || req.treasuryComment,
+      history: [...req.history, histEntry] };
+  };
+
+  const rejectReq = (req, actorName, comment='') => {
+    const histEntry = { date: new Date().toISOString(), actor: actorName, action: 'Отклонено', comment };
+    return { ...req, status: 'rejected', history: [...req.history, histEntry] };
+  };
+
+  const handleApprove = (req, actorName, comment) => {
+    onUpdate(advanceStatus(req, actorName, comment));
+  };
+
+  const handleReject = (req, actorName, comment) => {
+    onUpdate(rejectReq(req, actorName, comment));
+  };
+
+  const handleQuickApprove = (req) => {
+    if (!canActOn(user.role, req.status)) return;
+    onUpdate(advanceStatus(req, user.name));
+  };
+
+  const handleQuickReject = (req) => {
+    if (!canActOn(user.role, req.status)) return;
+    const reason = window.prompt('Причина отклонения:');
+    if (reason === null) return;
+    onUpdate(rejectReq(req, user.name, reason));
+  };
+
+  const handleBulkApprove = () => {
+    const toUpdate = requests.filter(r => selectedIds.includes(r.id) && canActOn(user.role, r.status));
+    toUpdate.forEach(r => onUpdate(advanceStatus(r, user.name)));
+    setSelectedIds([]);
+  };
+
+  const handleBulkReject = () => {
+    const reason = window.prompt('Причина отклонения (для всех выбранных):');
+    if (reason === null) return;
+    const toUpdate = requests.filter(r => selectedIds.includes(r.id) && canActOn(user.role, r.status));
+    toUpdate.forEach(r => onUpdate(rejectReq(r, user.name, reason)));
+    setSelectedIds([]);
+  };
+
+  const handleUpdateComment = (id, comment) => {
+    const req = requests.find(r=>r.id===id);
+    if (req) onUpdate({ ...req, treasuryComment: comment });
+  };
+
+  const exportCSV = () => {
+    const rows = [
+      ['ID','Инициатор','Должность','Филиал','Тип','Категория','Сумма','Срок','Статус','Назначение'].join(','),
+      ...filtered.map(r=>[
+        r.id, r.initiatorName, r.initiatorPosition, r.branch,
+        r.type==='invoice'?'Оплата счёта':'Выдача подотчёт',
+        getCategoryLabel(r.category), r.amount, r.dueDate, STATUSES[r.status]?.label||r.status,
+        `"${r.purpose.replace(/"/g,'""')}"`
+      ].join(','))
+    ].join('\n');
+    const blob = new Blob(['﻿'+rows], {type:'text/csv;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download='imbir_pay_export.csv'; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const toggleSelect = id => setSelectedIds(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev,id]);
+  const toggleAll = checked => setSelectedIds(checked ? filtered.map(r=>r.id) : []);
+
+  return (
+    <div className="max-w-screen-xl mx-auto px-6 py-6">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-xl font-bold text-gray-900">Казначейская панель</h2>
+          <p className="text-sm text-gray-500 mt-0.5">Управление заявками на оплату · Imbir Group</p>
+        </div>
+        <div className="text-right">
+          <div className="text-xs text-gray-400">Всего в обработке</div>
+          <div className="text-xl font-bold text-gray-900">{fmt(sumOf(requests.filter(r=>!['paid','rejected'].includes(r.status))))}</div>
+        </div>
+      </div>
+
+      <KPICards requests={requests} filter={filter} setFilter={setFilter} />
+      <PipelineBar requests={requests} />
+      <FilterBar filter={filter} setFilter={setFilter} search={search} setSearch={setSearch}
+                 onExportCSV={exportCSV} selectedIds={selectedIds} requests={filtered}
+                 onBulkApprove={handleBulkApprove} onBulkReject={handleBulkReject} user={user} />
+      <RequestsTable requests={filtered} onSelectRow={setDrawerReq} selectedIds={selectedIds}
+                     onToggleSelect={toggleSelect} onToggleAll={toggleAll}
+                     onQuickApprove={handleQuickApprove} onQuickReject={handleQuickReject} user={user} />
+
+      {drawerReq && (
+        <Drawer req={drawerReq} user={user}
+                onClose={()=>setDrawerReq(null)}
+                onApprove={(req,actor,comment)=>handleApprove(req,actor,comment)}
+                onReject={(req,actor,comment)=>handleReject(req,actor,comment)}
+                onUpdateComment={handleUpdateComment} />
+      )}
+    </div>
+  );
+}
+
+// MY REQUESTS (Initiator)
+
+function MyRequestsView({ requests, user }) {
+  const mine = useMemo(()=>requests.filter(r=>r.initiatorName===user.name).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)), [requests, user.name]);
+  const [drawerReq, setDrawerReq] = useState(null);
+
+  return (
+    <div className="max-w-screen-xl mx-auto px-6 py-6">
+      <div className="mb-6">
+        <h2 className="text-xl font-bold text-gray-900">Мои заявки</h2>
+        <p className="text-sm text-gray-500 mt-0.5">{user.name} · {mine.length} заявок</p>
+      </div>
+      {mine.length === 0 ? (
+        <div className="card py-16 text-center text-gray-400">
+          <div className="text-4xl mb-3">📭</div>
+          <p className="font-medium">У вас пока нет заявок</p>
+          <p className="text-sm mt-1">Нажмите «Новая заявка» для создания</p>
+        </div>
+      ) : (
+        <div className="card overflow-hidden">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="border-b border-gray-100 bg-gray-50">
+                <th className="px-4 py-3 text-left">Тип</th>
+                <th className="px-4 py-3 text-left">ID / Дата</th>
+                <th className="px-4 py-3 text-left">Назначение</th>
+                <th className="px-4 py-3 text-right">Сумма</th>
+                <th className="px-4 py-3 text-left">Срок</th>
+                <th className="px-4 py-3 text-left">Статус</th>
+              </tr>
+            </thead>
+            <tbody>
+              {mine.map(req=>(
+                <tr key={req.id} className="border-b border-gray-50 cursor-pointer" onClick={()=>setDrawerReq(req)}>
+                  <td className="px-4 py-3">
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-semibold ${req.type==='invoice'?'type-badge-invoice':'type-badge-advance'}`}>
+                      {req.type==='invoice'?'🧾':'💵'} {req.type==='invoice'?'Счёт':'Подотч.'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="text-xs font-mono font-semibold text-gray-700">{req.id}</div>
+                    <div className="text-xs text-gray-400">{fmtD(req.createdAt)}</div>
+                  </td>
+                  <td className="px-4 py-3 max-w-64">
+                    <div className="text-xs text-gray-700 line-clamp-2">{req.purpose}</div>
+                  </td>
+                  <td className="px-4 py-3 text-right"><span className="text-sm font-bold">{fmt(req.amount)}</span></td>
+                  <td className="px-4 py-3"><span className="text-xs text-gray-700">{fmtD(req.dueDate)}</span></td>
+                  <td className="px-4 py-3"><StatusBadge status={req.status} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {drawerReq && (
+        <Drawer req={drawerReq} user={user} onClose={()=>setDrawerReq(null)}
+                onApprove={()=>{}} onReject={()=>{}} onUpdateComment={()=>{}} />
+      )}
+    </div>
+  );
+}
+
+//
+
+function StepIndicator({ step }) {
+  const steps = [
+    { n:1, label:'Инициатор' },
+    { n:2, label:'Данные заявки' },
+    { n:3, label:'Маршрут' },
+    { n:4, label:'Подтверждение' },
+  ];
+  return (
+    <div className="flex items-center justify-between mb-8">
+      {steps.map((s, i) => {
+        const done = step > s.n;
+        const active = step === s.n;
+        return (
+          <React.Fragment key={s.n}>
+            <div className="flex flex-col items-center gap-1.5">
+              <div className="step-dot text-sm" style={{
+                background: done ? '#1B9963' : active ? BRAND : '#e5e7eb',
+                color: (done||active) ? '#fff' : '#9ca3af'
+              }}>
+                {done ? '✓' : s.n}
+              </div>
+              <span className={`text-xs font-medium whitespace-nowrap ${active?'text-orange-600':done?'text-green-600':'text-gray-400'}`}>
+                {s.label}
+              </span>
+            </div>
+            {i < steps.length-1 && (
+              <div className="flex-1 h-0.5 mx-2" style={{background: step > s.n ? '#1B9963' : '#e5e7eb'}} />
+            )}
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+}
+
+//
+
+const EMPTY_FORM = {
+  branch:'', initiatorName:'', initiatorPosition:'',
+  type:'', category:'',
+  // Invoice
+  file:null, fileName:'', fileData:null, amount:'', dueDate:'', priority:'standard', purpose:'',
+  // Advance
+  requestName:'', recipient:'', paymentForm:'Наличные', periodFrom:'', periodTo:'',
+  // Confirm
+  agreed:false,
+};
+
+function NewRequestForm({ user, requests, onSubmit, settings }) {
+  const cfg = settings || DEFAULT_SETTINGS;
+  const [step, setStep] = useState(1);
+  const [form, setForm] = useState({
+    ...EMPTY_FORM,
+    initiatorName: user.name,
+    initiatorPosition: user.position,
+  });
+  const [errors, setErrors] = useState({});
+  const [dupWarning, setDupWarning] = useState('');
+
+  const set = (k, v) => setForm(f=>({...f, [k]:v}));
+
+  const checkDup = (field, val) => {
+    if (!val) { setDupWarning(''); return false; }
+    if (field==='fileName') {
+      const exists = requests.some(r=>r.fileName === val);
+      setDupWarning(exists ? `⚠️ Файл "${val}" уже зарегистрирован — возможный дубликат` : '');
+      return exists;
+    }
+    if (field==='requestName') {
+      const exists = requests.some(r=>r.requestName === val);
+      setDupWarning(exists ? `⚠️ Заявка "${val}" уже существует — возможный дубликат` : '');
+      return exists;
+    }
+    return false;
+  };
+
+  const validateStep1 = () => {
+    const e={};
+    if (!form.branch) e.branch='Выберите филиал';
+    if (!form.initiatorName) e.initiatorName='Выберите инициатора';
+    return e;
+  };
+
+  const validateStep2 = () => {
+    const e={};
+    if (!form.type) e.type='Выберите тип заявки';
+    if (!form.category) e.category='Выберите категорию';
+    if (!form.amount || Number(form.amount)<=0) e.amount='Введите корректную сумму';
+    if (!form.dueDate) e.dueDate='Укажите желаемую дату';
+    if (!form.purpose.trim()) e.purpose='Заполните назначение';
+    if (form.type==='invoice' && !form.fileName) e.fileName='Прикрепите скан счёта';
+    if (form.type==='advance') {
+      if (!form.requestName.trim()) e.requestName='Укажите название заявки';
+      if (!form.recipient.trim()) e.recipient='Укажите получателя';
+      if (!form.periodFrom) e.periodFrom='Укажите начало периода';
+      if (!form.periodTo) e.periodTo='Укажите конец периода';
+    }
+    return e;
+  };
+
+  const next = () => {
+    let e = {};
+    if (step===1) e = validateStep1();
+    if (step===2) e = validateStep2();
+    if (Object.keys(e).length) { setErrors(e); return; }
+    setErrors({});
+    setStep(s=>s+1);
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 10*1024*1024) { setErrors(er=>({...er, fileName:'Файл слишком большой (макс. 10 МБ)'})); return; }
+    set('file', file);
+    set('fileName', file.name);
+    set('fileData', null);
+    checkDup('fileName', file.name);
+    // Сохраняем base64 для предпросмотра (файлы до 3 МБ)
+    if (file.size <= 3*1024*1024) {
+      const reader = new FileReader();
+      reader.onload = ev => set('fileData', ev.target.result);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSubmit = () => {
+    if (!form.agreed) { setErrors({agreed:'Необходимо подтвердить данные'}); return; }
+    const isDup = form.type==='invoice'
+      ? requests.some(r=>r.fileName===form.fileName)
+      : requests.some(r=>r.requestName===form.requestName);
+
+    const newReq = {
+      id: genId(),
+      type: form.type,
+      category: form.category,
+      initiatorName: form.initiatorName,
+      initiatorPosition: form.initiatorPosition,
+      branch: form.branch,
+      amount: Number(form.amount),
+      dueDate: form.dueDate,
+      priority: form.priority,
+      purpose: form.purpose,
+      status: 'cfo',
+      createdAt: new Date().toISOString(),
+      isDup,
+      treasuryComment: '',
+      history: [
+        { date: new Date().toISOString(), actor: form.initiatorName, action: 'Заявка создана', comment: '' },
+        { date: new Date().toISOString(), actor: 'Система', action: 'Направлена финдиректору (1-е согласование)', comment: '' },
+      ],
+      ...(form.type==='invoice' ? { fileName: form.fileName, fileData: form.fileData || null } : {
+        requestName: form.requestName,
+        recipient: form.recipient,
+        paymentForm: form.paymentForm,
+        periodFrom: form.periodFrom,
+        periodTo: form.periodTo,
+      }),
+    };
+
+    onSubmit(newReq, isDup);
+  };
+
+  const priorityIdx = PRIORITY_STEPS.indexOf(form.priority);
+
+  const userByName = name => USERS.find(u=>u.name===name);
+
+  return (
+    <div className="max-w-2xl mx-auto px-6 py-8">
+      <div className="mb-6">
+        <h2 className="text-xl font-bold text-gray-900">Новая заявка</h2>
+        <p className="text-sm text-gray-500 mt-0.5">Заполните форму для отправки на согласование</p>
+      </div>
+
+      <div className="card p-8">
+        <StepIndicator step={step} />
+
+        
+        {step===1 && (
+          <div className="space-y-5 anim-fade">
+            <h3 className="font-semibold text-gray-800 text-lg">Шаг 01 — Инициатор</h3>
+
+            {/* Branch first */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Филиал *</label>
+              <select value={form.branch}
+                      onChange={e=>{
+                        set('branch', e.target.value);
+                        set('initiatorName', '');
+                        set('initiatorPosition', '');
+                        setErrors(er=>({...er, branch:'', initiatorName:''}));
+                      }}
+                      className="input-field">
+                <option value="">— Выберите филиал —</option>
+                {(cfg.branches.filter(b=>b!=='Головной офис')).map(b=><option key={b} value={b}>{b}</option>)}
+              </select>
+              {errors.branch && <p className="text-xs text-red-500 mt-1">{errors.branch}</p>}
+            </div>
+
+            {/* Initiator filtered by branch */}
+            {form.branch && (
+              <div className="anim-fade">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Инициатор *</label>
+                <select value={form.initiatorName}
+                        onChange={e=>{
+                          const u = userByName(e.target.value);
+                          set('initiatorName', e.target.value);
+                          set('initiatorPosition', u?.position||'');
+                          setErrors(er=>({...er, initiatorName:''}));
+                        }}
+                        className="input-field">
+                  <option value="">— Выберите ФИО —</option>
+                  {getBranchUsers(form.branch, cfg).map(u=>(
+                    <option key={u.name} value={u.name}>{u.name} — {u.position}</option>
+                  ))}
+                </select>
+                {errors.initiatorName && <p className="text-xs text-red-500 mt-1">{errors.initiatorName}</p>}
+              </div>
+            )}
+
+            {form.initiatorName && (
+              <div className="bg-orange-50 border border-orange-100 rounded-xl p-4 anim-fade">
+                <div className="text-sm font-medium text-gray-800">{form.initiatorName}</div>
+                <div className="text-xs text-gray-500 mt-0.5">{form.initiatorPosition} · {form.branch}</div>
+              </div>
+            )}
+          </div>
+        )}
+
+        
+        {step===2 && (
+          <div className="space-y-6 anim-fade">
+            <h3 className="font-semibold text-gray-800 text-lg">Шаг 02 — Данные заявки</h3>
+
+            {/* 02·A Type */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Тип заявки *</label>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { value:'invoice', icon:'🧾', title:'Оплата счёта', desc:'Безналичный платёж поставщику' },
+                  { value:'advance', icon:'💵', title:'Выдача подотчёт', desc:'Наличные или аванс сотруднику' },
+                ].map(t=>(
+                  <button key={t.value} type="button"
+                          onClick={()=>{ set('type',t.value); setErrors(er=>({...er,type:''})); }}
+                          className={`p-4 rounded-xl border-2 text-left transition-all ${
+                            form.type===t.value ? 'border-orange-400 bg-orange-50' : 'border-gray-200 hover:border-gray-300 bg-white'}`}>
+                    <div className="text-2xl mb-1">{t.icon}</div>
+                    <div className="text-sm font-semibold text-gray-800">{t.title}</div>
+                    <div className="text-xs text-gray-500 mt-0.5">{t.desc}</div>
+                  </button>
+                ))}
+              </div>
+              {errors.type && <p className="text-xs text-red-500 mt-1">{errors.type}</p>}
+            </div>
+
+            {/* 02·B Category */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Категория расходов *</label>
+              <div className="grid grid-cols-3 gap-2">
+                {CATEGORIES.map(c=>(
+                  <button key={c.id} type="button"
+                          onClick={()=>{ set('category',c.id); setErrors(er=>({...er,category:''})); }}
+                          className={`p-3 rounded-xl border-2 text-center transition-all ${
+                            form.category===c.id ? 'border-orange-400 bg-orange-50' : 'border-gray-200 hover:border-gray-300 bg-white'}`}>
+                    <div className="text-xl">{c.icon}</div>
+                    <div className="text-xs font-medium text-gray-700 mt-1 leading-tight">{c.label}</div>
+                  </button>
+                ))}
+              </div>
+              {errors.category && <p className="text-xs text-red-500 mt-1">{errors.category}</p>}
+            </div>
+
+            {/* 02·C Type-specific */}
+            {form.type==='invoice' && (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Скан счёта * (PDF, JPG, PNG — до 10 МБ)</label>
+                  <div className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer hover:bg-gray-50 transition-colors ${errors.fileName?'border-red-300':'border-gray-300'}`}
+                       onClick={()=>document.getElementById('fileInput').click()}>
+                    {form.fileName ? (
+                      <div className="text-sm">
+                        <div className="text-2xl mb-1">📎</div>
+                        <div className="font-medium text-gray-700">{form.fileName}</div>
+                        <div className="text-xs text-gray-400 mt-1">Нажмите, чтобы заменить</div>
+                      </div>
+                    ) : (
+                      <div className="text-sm text-gray-500">
+                        <div className="text-3xl mb-2">📄</div>
+                        <div>Нажмите или перетащите файл</div>
+                      </div>
+                    )}
+                  </div>
+                  <input id="fileInput" type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={handleFileChange} />
+                  {errors.fileName && <p className="text-xs text-red-500 mt-1">{errors.fileName}</p>}
+                  {dupWarning && <p className="text-xs text-amber-600 mt-1 bg-amber-50 p-2 rounded-lg">{dupWarning}</p>}
+                </div>
+              </div>
+            )}
+
+            {form.type==='advance' && (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Название / номер заявки * (напр. ЗП-2026-001)</label>
+                  <input type="text" className="input-field" placeholder="КОМ-2026-001"
+                         value={form.requestName}
+                         onChange={e=>{ set('requestName',e.target.value); checkDup('requestName',e.target.value); setErrors(er=>({...er,requestName:''})); }} />
+                  {errors.requestName && <p className="text-xs text-red-500 mt-1">{errors.requestName}</p>}
+                  {dupWarning && <p className="text-xs text-amber-600 mt-1 bg-amber-50 p-2 rounded-lg">{dupWarning}</p>}
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Получатель (ФИО) *</label>
+                    <input type="text" className="input-field" placeholder="ФИО получателя"
+                           value={form.recipient} onChange={e=>{ set('recipient',e.target.value); setErrors(er=>({...er,recipient:''})); }} />
+                    {errors.recipient && <p className="text-xs text-red-500 mt-1">{errors.recipient}</p>}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Форма выдачи</label>
+                    <select className="input-field" value={form.paymentForm} onChange={e=>set('paymentForm',e.target.value)}>
+                      {['Наличные','Перевод на карту','Аванс'].map(f=><option key={f}>{f}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Период: с *</label>
+                    <input type="date" className="input-field" value={form.periodFrom}
+                           onChange={e=>{ set('periodFrom',e.target.value); setErrors(er=>({...er,periodFrom:''})); }} />
+                    {errors.periodFrom && <p className="text-xs text-red-500 mt-1">{errors.periodFrom}</p>}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">по *</label>
+                    <input type="date" className="input-field" value={form.periodTo}
+                           onChange={e=>{ set('periodTo',e.target.value); setErrors(er=>({...er,periodTo:''})); }} />
+                    {errors.periodTo && <p className="text-xs text-red-500 mt-1">{errors.periodTo}</p>}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 02·D Common fields */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Сумма (тенге) *</label>
+                <input type="number" className="input-field" placeholder="0" min="1"
+                       value={form.amount}
+                       onChange={e=>{ set('amount',e.target.value); setErrors(er=>({...er,amount:''})); }} />
+                {form.amount > 0 && <p className="text-xs text-gray-500 mt-1">{fmt(form.amount)}</p>}
+                {errors.amount && <p className="text-xs text-red-500 mt-1">{errors.amount}</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Желаемая дата оплаты *</label>
+                <input type="date" className="input-field" value={form.dueDate}
+                       onChange={e=>{ set('dueDate',e.target.value); setErrors(er=>({...er,dueDate:''})); }} />
+                {errors.dueDate && <p className="text-xs text-red-500 mt-1">{errors.dueDate}</p>}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Приоритет: <span className="font-semibold" style={{color:BRAND}}>{PRIORITY_LABELS[form.priority]}</span>
+              </label>
+              <input type="range" min="0" max="2" step="1" className="w-full"
+                     value={priorityIdx}
+                     onChange={e=>set('priority', PRIORITY_STEPS[Number(e.target.value)])} />
+              <div className="flex justify-between text-xs text-gray-400 mt-1">
+                <span>Плановая</span><span>Стандарт</span><span>Срочно</span>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Назначение и обоснование *</label>
+              <textarea className="input-field resize-none" rows="3"
+                        placeholder="Укажите цель платежа и почему важно оплатить в срок..."
+                        value={form.purpose}
+                        onChange={e=>{ set('purpose',e.target.value); setErrors(er=>({...er,purpose:''})); }} />
+              {errors.purpose && <p className="text-xs text-red-500 mt-1">{errors.purpose}</p>}
+            </div>
+          </div>
+        )}
+
+        
+        {step===3 && (
+          <div className="space-y-6 anim-fade">
+            <h3 className="font-semibold text-gray-800 text-lg">Шаг 03 — Маршрут согласования</h3>
+
+            {/* Summary */}
+            <div className="bg-gray-50 rounded-xl p-4 space-y-2 border border-gray-100">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Тип:</span>
+                <span className="font-medium">{form.type==='invoice'?'🧾 Оплата счёта':'💵 Выдача подотчёт'}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Сумма:</span>
+                <span className="font-bold text-gray-900">{fmt(form.amount)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Категория:</span>
+                <span>{getCategoryIcon(form.category)} {getCategoryLabel(form.category)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Срок оплаты:</span>
+                <span>{fmtD(form.dueDate)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Приоритет:</span>
+                <PriorityBadge priority={form.priority} />
+              </div>
+            </div>
+
+            {/* Chain */}
+            <div>
+              <p className="text-sm font-medium text-gray-700 mb-3">Цепочка согласования:</p>
+              <div className="space-y-3">
+                {CHAIN.map((c,i)=>(
+                  <div key={c.key} className="flex items-center gap-4">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
+                         style={{background:BRAND}}>{i+1}</div>
+                    <div className="flex-1 bg-gray-50 rounded-xl p-3 border border-gray-100">
+                      <div className="text-sm font-semibold text-gray-800">{c.name}</div>
+                      <div className="text-xs text-gray-500">{c.title} · {c.step}</div>
+                    </div>
+                  </div>
+                ))}
+                <div className="flex items-center gap-4">
+                  <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">💳</div>
+                  <div className="flex-1 bg-blue-50 rounded-xl p-3 border border-blue-100">
+                    <div className="text-sm font-semibold text-blue-800">Статус: Оплачено</div>
+                    <div className="text-xs text-blue-500">После исполнения казначеем</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        
+        {step===4 && (
+          <div className="space-y-6 anim-fade">
+            <h3 className="font-semibold text-gray-800 text-lg">Шаг 04 — Подтверждение</h3>
+
+            <div className="overflow-hidden rounded-xl border border-gray-200">
+              <table className="w-full text-sm">
+                <tbody>
+                  {[
+                    ['Инициатор', form.initiatorName],
+                    ['Должность', form.initiatorPosition],
+                    ['Филиал', form.branch],
+                    ['Тип заявки', form.type==='invoice'?'🧾 Оплата счёта':'💵 Выдача подотчёт'],
+                    ['Категория', `${getCategoryIcon(form.category)} ${getCategoryLabel(form.category)}`],
+                    ['Сумма', fmt(form.amount)],
+                    ['Срок оплаты', fmtD(form.dueDate)],
+                    ['Приоритет', PRIORITY_LABELS[form.priority]],
+                    ...(form.type==='invoice'
+                      ? [['Файл счёта', form.fileName]]
+                      : [['Название', form.requestName],['Получатель', form.recipient],['Форма выдачи', form.paymentForm],['Период', `${fmtD(form.periodFrom)} — ${fmtD(form.periodTo)}`]]
+                    ),
+                    ['Назначение', form.purpose],
+                  ].map(([k,v],i)=>(
+                    <tr key={i} className={i%2===0?'bg-gray-50':''}>
+                      <td className="px-4 py-2.5 text-gray-500 font-medium w-40">{k}</td>
+                      <td className="px-4 py-2.5 text-gray-800">{v}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {dupWarning && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-700">
+                {dupWarning}<br/>
+                <span className="text-xs mt-1 block">Заявка будет помечена меткой DUP, но всё равно может быть отправлена.</span>
+              </div>
+            )}
+
+            <label className="flex items-start gap-3 cursor-pointer group">
+              <input type="checkbox" className="checkbox-orange mt-0.5"
+                     checked={form.agreed} onChange={e=>{ set('agreed',e.target.checked); setErrors(er=>({...er,agreed:''})); }} />
+              <span className="text-sm text-gray-700 leading-relaxed">
+                Я подтверждаю, что все указанные данные верны и даю согласие на обработку заявки.
+                Заявка будет направлена руководителю на 1-е согласование.
+              </span>
+            </label>
+            {errors.agreed && <p className="text-xs text-red-500">{errors.agreed}</p>}
+          </div>
+        )}
+
+        {/* Navigation */}
+        <div className="flex justify-between mt-8 pt-6 border-t border-gray-100">
+          <button onClick={()=>setStep(s=>s-1)} disabled={step===1} className="btn-ghost">
+            ← Назад
+          </button>
+          {step < 4 ? (
+            <button onClick={next} className="btn-primary">
+              Далее →
+            </button>
+          ) : (
+            <button onClick={handleSubmit} className="btn-primary">
+              📤 Отправить заявку
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+//
+
+function App() {
+  const [user, setUser] = useState(null);
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [requests, setRequests] = useState(() => lsLoad() || SEED);
+  const [settings,  setSettings]  = useState(() => loadSettings()  || DEFAULT_SETTINGS);
+  const [passwords,  setPasswords]  = useState(() => loadPasswords() || DEFAULT_PASSWORDS);
+  const [waContacts, setWAContacts] = useState(() => loadWA() || {});
+  const [showChangePw, setShowChangePw] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [syncStatus, setSyncStatus] = useState('checking');
+
+  const showToast = (message, type='success') => setToast({ message, type });
+
+  // Загрузка из Supabase при старте + realtime подписка
+  useEffect(() => {
+    (async () => {
+      const data = await sbLoad();
+      if (data && data.length > 0) {
+        setRequests(data);
+        lsSave(data);
+        setSyncStatus('ok');
+      } else if (data && data.length === 0) {
+        // Первый запуск — заливаем SEED данные в Supabase
+        await sbSave(SEED);
+        setSyncStatus('ok');
+      } else {
+        setSyncStatus('offline');
+      }
+    })();
+    const unsub = sbSubscribe(newData => {
+      setRequests(newData);
+      lsSave(newData);
+      setSyncStatus('ok');
+    });
+    return unsub;
+  }, []);
+
+  const handleUpdatePassword = (name, newPw) => {
+    const updated = { ...passwords, [name]: newPw };
+    setPasswords(updated);
+    savePasswords(updated);
+  };
+
+  const handleUpdateWA = (contacts) => {
+    setWAContacts(contacts);
+    saveWA(contacts);
+  };
+
+  useEffect(() => { lsSave(requests); }, [requests]);
+
+  const handleLogin = (u) => {
+    setUser(u);
+    setActiveTab(['manager','cfo','treasurer'].includes(u.role) ? 'dashboard' : 'form');
+  };
+
+  const handleLogout = () => { setUser(null); };
+
+  const updateRequest = (updated) => {
+    const previous = requests.find(r => r.id === updated.id);
+    if (previous && previous.status !== updated.status) {
+      dispatchWANotifications(updated, previous.status, waContacts);
+    }
+    const newList = requests.map(r => r.id===updated.id ? updated : r);
+    setRequests(newList);
+    lsSave(newList);
+    sbSave(newList);
+  };
+
+  const addRequest = (req, isDup) => {
+    const newList = [...requests, req];
+    setRequests(newList);
+    lsSave(newList);
+    sbSave(newList);
+    dispatchWANotifications(req, null, waContacts);
+    showToast(isDup
+      ? `Заявка ${req.id} отправлена (обнаружен возможный дубликат — DUP)`
+      : `Заявка ${req.id} успешно отправлена на согласование`, isDup?'info':'success');
+    setActiveTab(['manager','cfo','treasurer'].includes(user.role) ? 'dashboard' : 'my');
+  };
+
+  if (!user) return (
+    <>
+      <LoginPage onLogin={handleLogin} settings={settings} passwords={passwords} />
+      {toast && <Toast {...toast} onClose={()=>setToast(null)} />}
+    </>
+  );
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <TopBar user={user} activeTab={activeTab} setActiveTab={setActiveTab} onLogout={handleLogout}
+              onChangePassword={() => setShowChangePw(true)} />
+      {showChangePw && (
+        <ProfileModal user={user} passwords={passwords} waContacts={waContacts}
+                      onSavePassword={handleUpdatePassword}
+                      onSaveWA={(name, contact) => handleUpdateWA({ ...waContacts, [name]: contact })}
+                      onClose={() => setShowChangePw(false)} />
+      )}
+
+      {activeTab==='dashboard' && ['manager','cfo','treasurer'].includes(user.role) && (
+        <DashboardView requests={requests} user={user} onUpdate={updateRequest} />
+      )}
+      {activeTab==='form' && (
+        <NewRequestForm user={user} requests={requests} onSubmit={addRequest} settings={settings} key={requests.length} />
+      )}
+      {activeTab==='my' && (
+        <MyRequestsView requests={requests} user={user} />
+      )}
+      {activeTab==='settings' && ['manager','cfo','treasurer'].includes(user.role) && (
+        <SettingsView settings={settings} setSettings={s=>{ setSettings(s); saveSettings(s); }}
+                      passwords={passwords} onUpdatePassword={handleUpdatePassword}
+                      waContacts={waContacts} onUpdateWA={handleUpdateWA}
+                      fbConfig={null} onSaveFB={()=>{}} fbConnected={true} />
+      )}
+
+      {toast && <Toast {...toast} onClose={()=>setToast(null)} />}
+    </div>
+  );
+}
+
+//
+
+class ErrorBoundary extends React.Component {
+  constructor(p) { super(p); this.state = { err: null }; }
+  static getDerivedStateFromError(e) { return { err: e }; }
+  render() {
+    if (this.state.err) return (
+      <div style={{padding:32,fontFamily:'monospace',color:'#dc2626'}}>
+        <h2>⚠️ Ошибка приложения</h2>
+        <pre style={{whiteSpace:'pre-wrap',fontSize:12}}>{String(this.state.err)}</pre>
+        <button onClick={()=>window.location.reload()} style={{marginTop:16,padding:'8px 16px',background:'#dc2626',color:'#fff',border:'none',borderRadius:8,cursor:'pointer'}}>
+          Перезагрузить
+        </button>
+      </div>
+    );
+    return this.props.children;
+  }
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <ErrorBoundary><App /></ErrorBoundary>
+);
+</script>
+</body>
+</html>
