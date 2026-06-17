@@ -252,7 +252,8 @@ const fmtD = d => d ? new Date(d).toLocaleDateString('ru-RU') : '—';
 const fmtDT= d => d ? new Date(d).toLocaleString('ru-RU', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
 const sumOf= arr => arr.reduce((s, r) => s + (Number(r.amount)||0), 0);
 
-const LS_KEY = 'imbir_pay_data_v2';
+const LS_KEY = 'imbir_pay_data_v3';
+try { localStorage.removeItem('imbir_pay_data_v2'); localStorage.removeItem('imbir_requests_v1'); } catch(e) {}
 const lsLoad = () => { try { const r=localStorage.getItem(LS_KEY); return r ? JSON.parse(r) : null; } catch { return null; } };
 const lsSave = d  => { try { localStorage.setItem(LS_KEY, JSON.stringify(d)); } catch {} };
 
