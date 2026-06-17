@@ -89,7 +89,7 @@ const DANGER = '#CF0000';
 
 const USERS = [
   { name: 'Мусина Дина',          position: 'Учредитель',                           role: 'manager' },
-  { name: 'Алия Кенжебекова',     position: 'Финансовый директор',                  role: 'observer' },
+  { name: 'Алия Кенжебекова',     position: 'Финансовый директор',                  role: 'admin' },
   { name: 'Гульнар Сулейменова',  position: 'Казначей',                             role: 'treasurer' },
   { name: 'Нургуль Казбекова',    position: 'Директор по развитию',                 role: 'initiator' },
   { name: 'Назерке Каребаева',    position: 'Директор по стратегическому развитию', role: 'initiator' },
@@ -659,8 +659,8 @@ function LoginPage({ onLogin, settings, passwords }) {
 //
 
 function TopBar({ user, activeTab, setActiveTab, onLogout, onChangePassword }) {
-  const isManagement = ['manager','observer','treasurer'].includes(user.role);
-  const roleLabel = { manager:'Учредитель', observer:'Финансовый директор', treasurer:'Казначей', initiator:'Инициатор' }[user.role];
+  const isManagement = ['manager','admin','treasurer'].includes(user.role);
+  const roleLabel = { manager:'Учредитель', admin:'Финансовый директор', treasurer:'Казначей', initiator:'Инициатор' }[user.role];
 
   return (
     <header className="sticky top-0 z-30" style={{background:'#4D295D', borderBottom:'1px solid rgba(182,146,68,0.3)'}}>
@@ -823,7 +823,7 @@ function FilterBar({ filter, setFilter, search, setSearch, onExportCSV, selected
     {key:'paid', label:'Оплачено'},
     {key:'rejected', label:'Отклонено'},
   ];
-  const isManagement = ['manager','observer','treasurer'].includes(user.role);
+  const isManagement = ['manager','admin','treasurer'].includes(user.role);
 
   return (
     <div className="space-y-3 mb-4">
@@ -867,7 +867,7 @@ function FilterBar({ filter, setFilter, search, setSearch, onExportCSV, selected
 //
 
 function RequestsTable({ requests, onSelectRow, selectedIds, onToggleSelect, onToggleAll, onQuickApprove, onQuickReject, user }) {
-  const isManagement = ['manager','observer','treasurer'].includes(user.role);
+  const isManagement = ['manager','admin','treasurer'].includes(user.role);
   const allChecked = requests.length > 0 && requests.every(r => selectedIds.includes(r.id));
 
   if (!requests.length) {
@@ -1051,16 +1051,24 @@ function ApprovalChainView({ req }) {
   );
 }
 
-function Drawer({ req, onClose, onApprove, onReject, onBlock, user, onUpdateComment }) {
+function Drawer({ req, onClose, onApprove, onReject, onBlock, onDelete, onEdit, user, onUpdateComment }) {
   const [comment, setComment] = useState(req.treasuryComment || '');
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectForm, setShowRejectForm] = useState(false);
-  const isManagement = ['manager','observer','treasurer'].includes(user.role);
+  const isManagement = ['manager','admin','treasurer'].includes(user.role);
   const canAct = canActOn(user.role, req.status, req);
   const isPayAction = user.role === 'treasurer';
   const approveLabel = isPayAction ? '💳 Оплатить' : '✅ Одобрить';
-  const canBlock = user.name === 'Алия Кенжебекова';
+  const canBlock = user.role === 'admin';
+  const canDelete = user.role === 'admin';
+  const canEdit = req.initiatorName === user.name;
   const isBlocked = req.status === 'blocked';
+
+  const doDelete = () => {
+    if (!window.confirm(`Удалить заявку ${req.id} безвозвратно?`)) return;
+    onDelete(req.id);
+    onClose();
+  };
 
   const doApprove = () => {
     onUpdateComment(req.id, comment);
@@ -1250,6 +1258,28 @@ function Drawer({ req, onClose, onApprove, onReject, onBlock, user, onUpdateComm
                 Заблокировано: {req.blockedBy}
               </p>
             )}
+          </div>
+        )}
+
+        {/* Edit button — for initiator */}
+        {canEdit && !showRejectForm && (
+          <div className="px-6 pb-2">
+            <button onClick={()=>{ onEdit(req); onClose(); }}
+                    className="w-full py-2.5 px-4 rounded-xl text-sm font-semibold transition-all"
+                    style={{background:'#f5f0f8', color:'#4D295D', border:'1px solid #c4a8d8'}}>
+              ✏️ Скорректировать заявку
+            </button>
+          </div>
+        )}
+
+        {/* Delete button — admin only */}
+        {canDelete && !showRejectForm && (
+          <div className="px-6 pb-4">
+            <button onClick={doDelete}
+                    className="w-full py-2 px-4 rounded-xl text-xs font-semibold transition-all"
+                    style={{background:'#fff0f0', color:'#9b1c1c', border:'1px solid #fca5a5'}}>
+              🗑 Удалить безвозвратно
+            </button>
           </div>
         )}
       </div>
@@ -1718,7 +1748,7 @@ function UserPasswordRow({ user, isDefault, onReset }) {
 
 //
 
-function DashboardView({ requests, user, onUpdate }) {
+function DashboardView({ requests, user, onUpdate, onDelete, onEdit }) {
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState([]);
@@ -1855,6 +1885,7 @@ function DashboardView({ requests, user, onUpdate }) {
                 onApprove={(req,actor,comment)=>handleApprove(req,actor,comment)}
                 onReject={(req,actor,comment)=>handleReject(req,actor,comment)}
                 onBlock={(req,action,actor)=>handleBlock(req,action,actor)}
+                onDelete={onDelete} onEdit={onEdit}
                 onUpdateComment={handleUpdateComment} />
       )}
     </div>
@@ -1863,7 +1894,7 @@ function DashboardView({ requests, user, onUpdate }) {
 
 // MY REQUESTS (Initiator)
 
-function MyRequestsView({ requests, user }) {
+function MyRequestsView({ requests, user, onDelete, onEdit }) {
   const mine = useMemo(()=>requests.filter(r=>r.initiatorName===user.name).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)), [requests, user.name]);
   const [drawerReq, setDrawerReq] = useState(null);
 
@@ -1918,7 +1949,7 @@ function MyRequestsView({ requests, user }) {
       )}
       {drawerReq && (
         <Drawer req={drawerReq} user={user} onClose={()=>setDrawerReq(null)}
-                onApprove={()=>{}} onReject={()=>{}} onBlock={()=>{}} onUpdateComment={()=>{}} />
+                onApprove={()=>{}} onReject={()=>{}} onBlock={()=>{}} onDelete={onDelete} onEdit={onEdit} onUpdateComment={()=>{}} />
       )}
     </div>
   );
@@ -1974,13 +2005,13 @@ const EMPTY_FORM = {
   agreed:false,
 };
 
-function NewRequestForm({ user, requests, onSubmit, settings }) {
+function NewRequestForm({ user, requests, onSubmit, settings, editingReq, onSaveEdit }) {
   const cfg = settings || DEFAULT_SETTINGS;
+  const isEditing = !!editingReq;
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState({
-    ...EMPTY_FORM,
-    initiatorName: user.name,
-    initiatorPosition: user.position,
+  const [form, setForm] = useState(() => {
+    if (editingReq) return { ...editingReq };
+    return { ...EMPTY_FORM, initiatorName: user.name, initiatorPosition: user.position };
   });
   const [errors, setErrors] = useState({});
   const [dupWarning, setDupWarning] = useState('');
@@ -2053,6 +2084,32 @@ function NewRequestForm({ user, requests, onSubmit, settings }) {
 
   const handleSubmit = () => {
     if (!form.agreed) { setErrors({agreed:'Необходимо подтвердить данные'}); return; }
+
+    if (isEditing) {
+      const updated = {
+        ...editingReq,
+        type: form.type,
+        category: form.category,
+        amount: Number(form.amount),
+        dueDate: form.dueDate,
+        priority: form.priority,
+        purpose: form.purpose,
+        ...(form.type==='invoice' ? { fileName: form.fileName, fileData: form.fileData || editingReq.fileData || null } : {
+          requestName: form.requestName,
+          recipient: form.recipient,
+          paymentForm: form.paymentForm,
+          periodFrom: form.periodFrom,
+          periodTo: form.periodTo,
+        }),
+        history: [
+          ...(editingReq.history || []),
+          { date: new Date().toISOString(), actor: form.initiatorName, action: 'Заявка скорректирована инициатором', comment: '' },
+        ],
+      };
+      onSaveEdit(updated);
+      return;
+    }
+
     const isDup = form.type==='invoice'
       ? requests.some(r=>r.fileName===form.fileName)
       : requests.some(r=>r.requestName===form.requestName);
@@ -2074,7 +2131,6 @@ function NewRequestForm({ user, requests, onSubmit, settings }) {
       treasuryComment: '',
       history: [
         { date: new Date().toISOString(), actor: form.initiatorName, action: 'Заявка создана', comment: '' },
-        { date: new Date().toISOString(), actor: 'Система', action: 'Направлена финдиректору (1-е согласование)', comment: '' },
       ],
       ...(form.type==='invoice' ? { fileName: form.fileName, fileData: form.fileData || null } : {
         requestName: form.requestName,
@@ -2095,7 +2151,7 @@ function NewRequestForm({ user, requests, onSubmit, settings }) {
   return (
     <div className="max-w-2xl mx-auto px-6 py-8">
       <div className="mb-6">
-        <h2 className="text-xl font-bold text-gray-900">Новая заявка</h2>
+        <h2 className="text-xl font-bold text-gray-900">{isEditing ? `✏️ Корректировка заявки ${editingReq.id}` : 'Новая заявка'}</h2>
         <p className="text-sm text-gray-500 mt-0.5">Заполните форму для отправки на согласование</p>
       </div>
 
@@ -2423,7 +2479,7 @@ function NewRequestForm({ user, requests, onSubmit, settings }) {
             </button>
           ) : (
             <button onClick={handleSubmit} className="btn-primary">
-              📤 Отправить заявку
+              {isEditing ? '💾 Сохранить изменения' : '📤 Отправить заявку'}
             </button>
           )}
         </div>
@@ -2436,7 +2492,7 @@ function NewRequestForm({ user, requests, onSubmit, settings }) {
 
 function App() {
   const [user, setUser] = useState(() => {
-    try { const s = localStorage.getItem('imbir_session'); return s ? JSON.parse(s) : null; } catch(e) { return null; }
+    try { const s = localStorage.getItem('imbir_session'); if (!s) return null; const saved = JSON.parse(s); const fresh = USERS.find(u=>u.name===saved.name); return fresh ? {...saved, role: fresh.role, position: fresh.position} : saved; } catch(e) { return null; }
   });
   const [activeTab, setActiveTab] = useState('dashboard');
   const [requests, setRequests] = useState(() => lsLoad() || []);
@@ -2446,6 +2502,7 @@ function App() {
   const [showChangePw, setShowChangePw] = useState(false);
   const [toast, setToast] = useState(null);
   const [syncStatus, setSyncStatus] = useState('checking');
+  const [editingReq, setEditingReq] = useState(null);
 
   const showToast = (message, type='success') => setToast({ message, type });
 
@@ -2487,7 +2544,7 @@ function App() {
   const handleLogin = (u) => {
     setUser(u);
     try { localStorage.setItem('imbir_session', JSON.stringify(u)); } catch(e) {}
-    setActiveTab(['manager','observer','treasurer'].includes(u.role) ? 'dashboard' : 'form');
+    setActiveTab(['manager','admin','treasurer'].includes(u.role) ? 'dashboard' : 'form');
   };
 
   const handleLogout = () => {
@@ -2506,6 +2563,14 @@ function App() {
     sbSave(newList);
   };
 
+  const deleteRequest = (id) => {
+    const newList = requests.filter(r => r.id !== id);
+    setRequests(newList);
+    lsSave(newList);
+    sbDelete(id);
+    showToast('Заявка удалена', 'success');
+  };
+
   const addRequest = (req, isDup) => {
     const newList = [...requests, req];
     setRequests(newList);
@@ -2515,7 +2580,7 @@ function App() {
     showToast(isDup
       ? `Заявка ${req.id} отправлена (обнаружен возможный дубликат — DUP)`
       : `Заявка ${req.id} успешно отправлена на согласование`, isDup?'info':'success');
-    setActiveTab(['manager','observer','treasurer'].includes(user.role) ? 'dashboard' : 'my');
+    setActiveTab(['manager','admin','treasurer'].includes(user.role) ? 'dashboard' : 'my');
   };
 
   if (!user) return (
@@ -2536,16 +2601,22 @@ function App() {
                       onClose={() => setShowChangePw(false)} />
       )}
 
-      {activeTab==='dashboard' && ['manager','observer','treasurer'].includes(user.role) && (
-        <DashboardView requests={requests} user={user} onUpdate={updateRequest} />
+      {activeTab==='dashboard' && ['manager','admin','treasurer'].includes(user.role) && (
+        <DashboardView requests={requests} user={user} onUpdate={updateRequest} onDelete={deleteRequest}
+          onEdit={(req) => { setEditingReq(req); setActiveTab('form'); }} />
       )}
       {activeTab==='form' && (
-        <NewRequestForm user={user} requests={requests} onSubmit={addRequest} settings={settings} key={requests.length} />
+        <NewRequestForm user={user} requests={requests} onSubmit={addRequest} settings={settings}
+          editingReq={editingReq}
+          onSaveEdit={(updated) => { updateRequest(updated); setEditingReq(null); showToast('Заявка обновлена'); }}
+          key={editingReq ? editingReq.id + '_edit' : requests.length} />
       )}
       {activeTab==='my' && (
-        <MyRequestsView requests={requests} user={user} />
+        <MyRequestsView requests={requests} user={user}
+          onDelete={deleteRequest}
+          onEdit={(req) => { setEditingReq(req); setActiveTab('form'); }} />
       )}
-      {activeTab==='settings' && ['manager','observer','treasurer'].includes(user.role) && (
+      {activeTab==='settings' && ['manager','admin','treasurer'].includes(user.role) && (
         <SettingsView settings={settings} setSettings={s=>{ setSettings(s); saveSettings(s); }}
                       passwords={passwords} onUpdatePassword={handleUpdatePassword}
                       waContacts={waContacts} onUpdateWA={handleUpdateWA}
