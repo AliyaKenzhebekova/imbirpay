@@ -2035,9 +2035,22 @@ function NewRequestForm({ user, requests, onSubmit, settings, editingReq, onSave
   const cfg = settings || DEFAULT_SETTINGS;
   const isEditing = !!editingReq;
   const [step, setStep] = useState(1);
+
+  const genRequestName = () => {
+    const year = new Date().getFullYear();
+    const prefix = `НАЛ-${year}-`;
+    const maxNum = requests
+      .filter(r => r.type === 'advance' && (r.requestName||'').startsWith(prefix))
+      .reduce((max, r) => {
+        const n = parseInt((r.requestName||'').replace(prefix, ''), 10);
+        return isNaN(n) ? max : Math.max(max, n);
+      }, 0);
+    return `${prefix}${String(maxNum + 1).padStart(3, '0')}`;
+  };
+
   const [form, setForm] = useState(() => {
     if (editingReq) return { ...editingReq };
-    return { ...EMPTY_FORM, branch: user.loginBranch || '', initiatorName: user.name, initiatorPosition: user.position, recipient: user.name };
+    return { ...EMPTY_FORM, branch: user.loginBranch || '', initiatorName: user.name, initiatorPosition: user.position, recipient: user.name, requestName: genRequestName() };
   });
   const [errors, setErrors] = useState({});
   const [dupWarning, setDupWarning] = useState('');
@@ -2310,8 +2323,8 @@ function NewRequestForm({ user, requests, onSubmit, settings, editingReq, onSave
             {form.type==='advance' && (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Название / номер заявки * (напр. ЗП-2026-001)</label>
-                  <input type="text" className="input-field" placeholder="КОМ-2026-001"
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Номер заявки *</label>
+                  <input type="text" className="input-field font-mono"
                          value={form.requestName}
                          onChange={e=>{ set('requestName',e.target.value); checkDup('requestName',e.target.value); setErrors(er=>({...er,requestName:''})); }} />
                   {errors.requestName && <p className="text-xs text-red-500 mt-1">{errors.requestName}</p>}
