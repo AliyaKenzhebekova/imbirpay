@@ -2037,7 +2037,7 @@ function NewRequestForm({ user, requests, onSubmit, settings, editingReq, onSave
   const [step, setStep] = useState(1);
   const [form, setForm] = useState(() => {
     if (editingReq) return { ...editingReq };
-    return { ...EMPTY_FORM, initiatorName: user.name, initiatorPosition: user.position, recipient: user.name };
+    return { ...EMPTY_FORM, branch: user.loginBranch || '', initiatorName: user.name, initiatorPosition: user.position, recipient: user.name };
   });
   const [errors, setErrors] = useState({});
   const [dupWarning, setDupWarning] = useState('');
@@ -2194,9 +2194,10 @@ function NewRequestForm({ user, requests, onSubmit, settings, editingReq, onSave
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Филиал *</label>
               <select value={form.branch}
                       onChange={e=>{
-                        set('branch', e.target.value);
-                        set('initiatorName', '');
-                        set('initiatorPosition', '');
+                        const newBranch = e.target.value;
+                        const stillInBranch = getBranchUsers(newBranch, cfg).some(u=>u.name===form.initiatorName);
+                        set('branch', newBranch);
+                        if (!stillInBranch) { set('initiatorName', ''); set('initiatorPosition', ''); }
                         setErrors(er=>({...er, branch:'', initiatorName:''}));
                       }}
                       className="input-field">
