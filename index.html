@@ -1271,7 +1271,6 @@ function Drawer({ req, onClose, onApprove, onReject, onBlock, onDelete, onEdit, 
                 <div><span className="text-gray-500">Название:</span> <span className="font-mono font-medium text-gray-800">{req.requestName}</span></div>
                 <div><span className="text-gray-500">Получатель:</span> <span className="font-medium text-gray-800">{req.recipient}</span></div>
                 <div><span className="text-gray-500">Форма выдачи:</span> <span className="font-medium text-gray-800">{req.paymentForm}</span></div>
-                <div><span className="text-gray-500">Период:</span> <span className="font-medium text-gray-800">{fmtD(req.periodFrom)} – {fmtD(req.periodTo)}</span></div>
               </div>
             </div>
           )}
@@ -2166,8 +2165,6 @@ function NewRequestForm({ user, requests, onSubmit, settings, editingReq, onSave
     if (form.type==='advance') {
       if (!form.requestName.trim()) e.requestName='Укажите название заявки';
       if (!form.recipient.trim()) e.recipient='Укажите получателя';
-      if (!form.periodFrom) e.periodFrom='Укажите начало периода';
-      if (!form.periodTo) e.periodTo='Укажите конец периода';
     }
     return e;
   };
@@ -2455,20 +2452,6 @@ function NewRequestForm({ user, requests, onSubmit, settings, editingReq, onSave
                     </select>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Период: с *</label>
-                    <input type="date" className="input-field" value={form.periodFrom}
-                           onChange={e=>{ set('periodFrom',e.target.value); setErrors(er=>({...er,periodFrom:''})); }} />
-                    {errors.periodFrom && <p className="text-xs text-red-500 mt-1">{errors.periodFrom}</p>}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">по *</label>
-                    <input type="date" className="input-field" value={form.periodTo}
-                           onChange={e=>{ set('periodTo',e.target.value); setErrors(er=>({...er,periodTo:''})); }} />
-                    {errors.periodTo && <p className="text-xs text-red-500 mt-1">{errors.periodTo}</p>}
-                  </div>
-                </div>
               </div>
             )}
 
@@ -2587,7 +2570,7 @@ function NewRequestForm({ user, requests, onSubmit, settings, editingReq, onSave
                     ['Приоритет', PRIORITY_LABELS[form.priority]],
                     ...(form.type==='invoice'
                       ? [['Файл счёта', form.fileName]]
-                      : [['Название', form.requestName],['Получатель', form.recipient],['Форма выдачи', form.paymentForm],['Период', `${fmtD(form.periodFrom)} — ${fmtD(form.periodTo)}`]]
+                      : [['Название', form.requestName],['Получатель', form.recipient],['Форма выдачи', form.paymentForm],]
                     ),
                     ['Назначение', form.purpose],
                   ].map(([k,v],i)=>(
