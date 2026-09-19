@@ -2070,6 +2070,7 @@ function NewRequestForm({ user, requests, onSubmit, settings, editingReq, onSave
   });
   const [errors, setErrors] = useState({});
   const [dupWarning, setDupWarning] = useState('');
+  const [dupModal, setDupModal] = useState(null); // { existingReq, pendingReq }
 
   const set = (k, v) => setForm(f=>({...f, [k]:v}));
 
@@ -2165,9 +2166,10 @@ function NewRequestForm({ user, requests, onSubmit, settings, editingReq, onSave
       return;
     }
 
-    const isDup = form.type==='invoice'
-      ? requests.some(r=>r.fileName===form.fileName)
-      : requests.some(r=>r.requestName===form.requestName);
+    const ACTIVE = ['new','manager','approved'];
+    const existingDup = form.type==='invoice'
+      ? requests.find(r=>r.fileName===form.fileName && ACTIVE.includes(r.status))
+      : requests.find(r=>r.requestName===form.requestName && ACTIVE.includes(r.status));
 
     const newReq = {
       id: genId(),
@@ -2182,7 +2184,7 @@ function NewRequestForm({ user, requests, onSubmit, settings, editingReq, onSave
       purpose: form.purpose,
       status: 'manager',
       createdAt: new Date().toISOString(),
-      isDup,
+      isDup: !!existingDup,
       treasuryComment: '',
       history: [
         { date: new Date().toISOString(), actor: form.initiatorName, action: 'Заявка создана', comment: '' },
@@ -2196,7 +2198,11 @@ function NewRequestForm({ user, requests, onSubmit, settings, editingReq, onSave
       }),
     };
 
-    onSubmit(newReq, isDup);
+    if (existingDup) {
+      setDupModal({ existingReq: existingDup, pendingReq: newReq });
+      return;
+    }
+    onSubmit(newReq, false);
   };
 
   const priorityIdx = PRIORITY_STEPS.indexOf(form.priority);
@@ -2526,6 +2532,40 @@ function NewRequestForm({ user, requests, onSubmit, settings, editingReq, onSave
               </span>
             </label>
             {errors.agreed && <p className="text-xs text-red-500">{errors.agreed}</p>}
+          </div>
+        )}
+
+        {/* Duplicate confirmation modal */}
+        {dupModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+              <div className="text-2xl mb-3 text-center">⚠️</div>
+              <h3 className="text-lg font-bold text-gray-900 text-center mb-2">Возможный дубликат</h3>
+              <p className="text-sm text-gray-600 text-center mb-4">
+                Похожая заявка уже существует и находится на согласовании:
+              </p>
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm mb-5 space-y-1">
+                <div><span className="font-medium text-gray-700">Номер:</span> <span className="font-mono">{dupModal.existingReq.requestName || dupModal.existingReq.id}</span></div>
+                <div><span className="font-medium text-gray-700">Сумма:</span> {(dupModal.existingReq.amount||0).toLocaleString('ru-RU')} ₸</div>
+                <div><span className="font-medium text-gray-700">Инициатор:</span> {dupModal.existingReq.initiatorName}</div>
+                <div><span className="font-medium text-gray-700">Статус:</span> {
+                  dupModal.existingReq.status==='new'?'Новая':
+                  dupModal.existingReq.status==='manager'?'У руководителя':
+                  dupModal.existingReq.status==='approved'?'Одобрена':'—'
+                }</div>
+                <div><span className="font-medium text-gray-700">Дата:</span> {new Date(dupModal.existingReq.createdAt).toLocaleDateString('ru-RU')}</div>
+              </div>
+              <p className="text-xs text-gray-500 text-center mb-5">Чтобы избежать путаницы у казначея, рекомендуем отменить отправку.</p>
+              <div className="flex gap-3">
+                <button onClick={()=>setDupModal(null)} className="btn-primary flex-1">
+                  ✕ Отменить
+                </button>
+                <button onClick={()=>{ const r=dupModal.pendingReq; setDupModal(null); onSubmit(r, true); }}
+                        className="btn-ghost flex-1 text-amber-700 border-amber-300 hover:bg-amber-50">
+                  Всё равно отправить
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
