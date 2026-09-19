@@ -2071,6 +2071,7 @@ function NewRequestForm({ user, requests, onSubmit, settings, editingReq, onSave
   const [errors, setErrors] = useState({});
   const [dupWarning, setDupWarning] = useState('');
   const [dupModal, setDupModal] = useState(null); // { existingReq, pendingReq }
+  const ACTIVE_STATUSES = ['new','manager','approved'];
 
   const set = (k, v) => setForm(f=>({...f, [k]:v}));
 
@@ -2122,14 +2123,31 @@ function NewRequestForm({ user, requests, onSubmit, settings, editingReq, onSave
     setStep(s=>s+1);
   };
 
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     if (file.size > 10*1024*1024) { setErrors(er=>({...er, fileName:'Файл слишком большой (макс. 10 МБ)'})); return; }
     set('file', file);
     set('fileName', file.name);
     set('fileData', null);
-    checkDup('fileName', file.name);
+    set('fileHash', null);
+
+    // Считаем SHA-256 содержимого для надёжной проверки дублей
+    try {
+      const buf = await file.arrayBuffer();
+      const hashBuf = await crypto.subtle.digest('SHA-256', buf);
+      const hash = Array.from(new Uint8Array(hashBuf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+      set('fileHash', hash);
+      const dupByHash = requests.find(r=>r.fileHash===hash && ACTIVE_STATUSES.includes(r.status));
+      if (dupByHash) {
+        setDupWarning(`⚠️ Файл с идентичным содержимым уже зарегистрирован в заявке ${dupByHash.requestName||dupByHash.id} (${dupByHash.initiatorName})`);
+      } else {
+        checkDup('fileName', file.name);
+      }
+    } catch {
+      checkDup('fileName', file.name);
+    }
+
     // Сохраняем base64 для предпросмотра (файлы до 3 МБ)
     if (file.size <= 3*1024*1024) {
       const reader = new FileReader();
@@ -2168,7 +2186,10 @@ function NewRequestForm({ user, requests, onSubmit, settings, editingReq, onSave
 
     const ACTIVE = ['new','manager','approved'];
     const existingDup = form.type==='invoice'
-      ? requests.find(r=>r.fileName===form.fileName && ACTIVE.includes(r.status))
+      ? requests.find(r=>ACTIVE.includes(r.status) && (
+          (form.fileHash && r.fileHash && r.fileHash===form.fileHash) ||
+          (!form.fileHash && r.fileName===form.fileName)
+        ))
       : requests.find(r=>r.requestName===form.requestName && ACTIVE.includes(r.status));
 
     const newReq = {
@@ -2189,7 +2210,7 @@ function NewRequestForm({ user, requests, onSubmit, settings, editingReq, onSave
       history: [
         { date: new Date().toISOString(), actor: form.initiatorName, action: 'Заявка создана', comment: '' },
       ],
-      ...(form.type==='invoice' ? { fileName: form.fileName, fileData: form.fileData || null } : {
+      ...(form.type==='invoice' ? { fileName: form.fileName, fileData: form.fileData || null, fileHash: form.fileHash || null } : {
         requestName: form.requestName,
         recipient: form.recipient,
         paymentForm: form.paymentForm,
