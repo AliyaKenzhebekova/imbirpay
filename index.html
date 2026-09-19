@@ -2681,445 +2681,468 @@ const MONTHS_SHORT = ['Янв','Фев','Мар','Апр','Май','Июн','И�
 const MONTHS_FULL  = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
 const DOW_RU       = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
 
-// Карточка-детализация заявки
-function ReqDetailModal({ req, onClose }) {
-  if (!req) return null;
-  const STATUS_LABEL = { new:'Новая', manager:'У учредителя', approved:'Одобрена', paid:'Оплачена', rejected:'Отклонена' };
-  const catLabel = (CATEGORIES.find(c=>c.id===req.category)||{}).label || req.category || '—';
-  return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-5" onClick={e=>e.stopPropagation()}>
-        <div className="flex items-start justify-between mb-3">
-          <div>
-            <div className="font-bold text-gray-900 font-mono text-sm">{req.requestName || req.id}</div>
-            <div className="text-xs text-gray-500 mt-0.5">{req.branch}</div>
-          </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-lg leading-none">✕</button>
-        </div>
-        {[
-          ['Инициатор',    req.initiatorName],
-          ['Категория',    catLabel],
-          ['Сумма',        `${(req.amount||0).toLocaleString('ru-RU')} ₸`],
-          ['Дата оплаты',  req.dueDate],
-          ['Статус',       STATUS_LABEL[req.status] || req.status],
-          ['Назначение',   req.purpose],
-        ].map(([label, val]) => val ? (
-          <div key={label} className="flex gap-2 py-1.5 border-b border-gray-50 last:border-0">
-            <span className="text-xs text-gray-500 w-28 flex-shrink-0">{label}</span>
-            <span className="text-xs text-gray-800 font-medium">{val}</span>
-          </div>
-        ) : null)}
-      </div>
-    </div>
-  );
+const DEFAULT_CAL_CATEGORIES = [
+  'Аренда нежилого помещения','Ком. услуги нежилого помещения',
+  'Аренда жилого помещения','Ком. услуги жилого помещения',
+  'Услуги связи','Текущие ремонты, приобретение МБС',
+  'Расходы по реализации услуг','Прачечные услуги','Клининг',
+  'Почта, доставка, такси','Корпоративные мероприятия',
+  'IT инфраструктура','Типографические услуги','Расходы на маркетинг',
+  'Хозтовары, канцтовары, орг.техника','Обучение персонала, проф. услуги',
+  'Юридические услуги, нотариус','Капитальный ремонт',
+  'Содержание мастеров','Оформление мастеров','Командировочные мастеров',
+  'З/п мастеров','Проценты мастеров','З/п админов','Бонусы админов',
+  'З/п колл-центра','Бонусы колл-центра','З/п техперсонал','З/п АУП',
+  'Зарплата учредителя','Договорники','Командировочные расходы',
+  'Налоги на ФОТ','Налоги мастеров','Налоги','Комиссия банка',
+  'Проценты по кредиту','Покупка ОС','Продажа ОС','Прочее',
+];
+
+const URGENCY_DAYS_DEFAULT = 7;
+
+function calState(status, daysLeft) {
+  if (status === 'Оплачено') return 'Оплачено';
+  if (daysLeft === null) return '—';
+  if (daysLeft < 0)  return 'Просрочено';
+  if (daysLeft <= URGENCY_DAYS_DEFAULT) return 'Срочно';
+  return 'В срок';
 }
 
-// Детализация ячейки ДДС — список заявок
-function CellDetailModal({ reqs, title, onClose }) {
-  const [detail, setDetail] = React.useState(null);
-  if (!reqs) return null;
-  const STATUS_COLOR = { new:'#6D28D9', manager:'#92400E', approved:'#15803D', paid:'#1A4DAB', rejected:'#CF0000' };
-  const STATUS_LABEL = { new:'Новая', manager:'У учредителя', approved:'Одобрена', paid:'Оплачена', rejected:'Отклонена' };
-  return (
-    <>
-      <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={onClose}>
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-5 max-h-[80vh] flex flex-col" onClick={e=>e.stopPropagation()}>
-          <div className="flex items-center justify-between mb-4">
-            <div className="font-bold text-gray-900">{title}</div>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-lg">✕</button>
-          </div>
-          <div className="overflow-y-auto flex-1 space-y-2">
-            {reqs.length === 0 && <p className="text-sm text-gray-400 text-center py-4">Нет заявок</p>}
-            {reqs.map(r => (
-              <div key={r.id} className="flex items-center justify-between gap-3 p-3 rounded-xl border border-gray-100 hover:bg-gray-50 cursor-pointer"
-                   onClick={()=>setDetail(r)}>
-                <div className="min-w-0">
-                  <div className="text-sm font-medium text-gray-900 truncate">{r.requestName || r.id}</div>
-                  <div className="text-xs text-gray-500 truncate">{r.initiatorName} · {r.branch} · {r.dueDate}</div>
-                </div>
-                <div className="text-right flex-shrink-0">
-                  <div className="text-sm font-bold text-gray-900">{(r.amount||0).toLocaleString('ru-RU')} ₸</div>
-                  <div className="text-xs" style={{color: STATUS_COLOR[r.status]||'#555'}}>{STATUS_LABEL[r.status]||r.status}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-      {detail && <ReqDetailModal req={detail} onClose={()=>setDetail(null)} />}
-    </>
-  );
-}
+const STATE_STYLE = {
+  'Оплачено':  { bg:'#DCFCE7', text:'#15803D', dot:'#16A34A' },
+  'Просрочено':{ bg:'#FEE2E2', text:'#B91C1C', dot:'#DC2626' },
+  'Срочно':    { bg:'#FEF9C3', text:'#A16207', dot:'#D97706' },
+  'В срок':    { bg:'#F3F4F6', text:'#4B5563', dot:'#9CA3AF' },
+  '—':         { bg:'#F9FAFB', text:'#9CA3AF', dot:'#D1D5DB' },
+};
 
 function PaymentCalendarView({ requests, user, settings, onSaveSettings }) {
-  const cfg = settings || DEFAULT_SETTINGS;
-  const allBranches = cfg.branches || ['Головной офис', ...BRANCHES];
+  const canEdit = ['admin','treasurer'].includes(user.role);
+
+  const calItems   = settings?.calendarItems     || [];
+  const calCats    = settings?.calendarCategories || DEFAULT_CAL_CATEGORIES;
+  const calBranch  = settings?.calendarBranch     || 'all';
+
+  const save = (patch) => onSaveSettings && onSaveSettings({ ...settings, ...patch });
+
+  const [tab, setTab]         = React.useState('payments'); // payments | summary | reference
+  const [editRow, setEditRow] = React.useState(null);       // null | 'new' | item object
+  const [filterBranch, setFilterBranch] = React.useState('all');
+  const [filterState, setFilterState]   = React.useState('all');
+
+  const allBranches = (settings?.branches) || ['Головной офис', ...BRANCHES];
   const isManagement = ['manager','admin','treasurer'].includes(user.role);
 
-  const [selectedBranch, setSelectedBranch] = React.useState(
-    isManagement ? 'all' : (user.loginBranch || allBranches[0])
-  );
-  const [viewYear, setViewYear]   = React.useState(new Date().getFullYear());
-  const [activeView, setActiveView] = React.useState('dds');   // 'dds' | 'month'
-  const [activeMonth, setActiveMonth] = React.useState(new Date().getMonth()); // for month view
-  const [cellModal, setCellModal] = React.useState(null); // { reqs, title }
+  const today = new Date(); today.setHours(0,0,0,0);
+  const todayStr = today.toISOString().slice(0,10);
 
-  // Filter by branch
-  const visible = requests.filter(r => {
-    if (!r.dueDate) return false;
-    if (selectedBranch !== 'all' && r.branch !== selectedBranch) return false;
+  const daysLeft = (deadline) => {
+    if (!deadline) return null;
+    const d = new Date(deadline); d.setHours(0,0,0,0);
+    return Math.round((d - today) / 86400000);
+  };
+
+  // Enrich each item with computed fields
+  const enriched = calItems.map((it, idx) => {
+    const dl = daysLeft(it.deadline);
+    const state = calState(it.status, dl);
+    return { ...it, _idx: idx, _daysLeft: dl, _state: state };
+  });
+
+  const filtered = enriched.filter(it => {
+    if (filterBranch !== 'all' && it.branch !== filterBranch) return false;
+    if (filterState  !== 'all' && it._state !== filterState)  return false;
     return true;
   });
 
-  // Helper: sum for category + month
-  const sumFor = (catId, monthIdx, statusFilter) => {
-    return visible.filter(r => {
-      const d = new Date(r.dueDate);
-      const catMatch = catId === '__all__' ? true : (catId === '__income__' ? r.type === 'income' : r.category === catId);
-      const monthMatch = d.getFullYear() === viewYear && d.getMonth() === monthIdx;
-      const statusMatch = statusFilter ? statusFilter.includes(r.status) : true;
-      return catMatch && monthMatch && statusMatch && r.status !== 'rejected';
-    });
-  };
+  // KPI totals
+  const totalDue       = enriched.filter(it=>it.status!=='Оплачено').reduce((s,it)=>s+(it.amount||0),0);
+  const totalOverdue   = enriched.filter(it=>it._state==='Просрочено').reduce((s,it)=>s+(it.amount||0),0);
+  const totalUrgent    = enriched.filter(it=>it._state==='Срочно').reduce((s,it)=>s+(it.amount||0),0);
+  const totalPaid      = enriched.filter(it=>it.status==='Оплачено').reduce((s,it)=>s+(it.amount||0),0);
 
-  const fmt    = n => n ? n.toLocaleString('ru-RU') : '—';
-  const fmtDev = (fact, budget) => {
-    if (!budget) return null;
-    const dev = fact - budget;
-    return { val: Math.abs(dev).toLocaleString('ru-RU'), pos: dev >= 0, pct: Math.round(Math.abs(dev)/budget*100) };
-  };
+  const fmt = n => (n||0).toLocaleString('ru-RU');
 
-  // Budget key: year__branch__catId
-  const budgetKey = (catId) => `${viewYear}__${selectedBranch}__${catId}`;
-  const getBudgetRow = (catId) => {
-    const raw = (settings?.ddsBudget || {})[budgetKey(catId)];
-    return raw ? raw : Array(12).fill(0);
-  };
-  const saveBudgetCell = (catId, monthIdx, val) => {
-    const row = [...getBudgetRow(catId)];
-    row[monthIdx] = Number(val) || 0;
-    const updated = { ...(settings?.ddsBudget || {}), [budgetKey(catId)]: row };
-    if (onSaveSettings) onSaveSettings({ ...settings, ddsBudget: updated });
-  };
-
-  // ── DDS TABLE VIEW ─────────────────────────────────────────────────────────
-  const DDSView = () => {
-    const PLAN_ST = ['new','manager','approved'];
-    const FACT_ST = ['paid'];
-    const [editCell, setEditCell] = React.useState(null); // {catId, m, val}
-
-    const yearTotals = (catId, statusFilter) =>
-      Array.from({length:12},(_,m)=>sumFor(catId,m,statusFilter).reduce((s,r)=>s+(r.amount||0),0));
-
-    // All CATEGORIES — always show all rows (budget may be filled even without requests)
-    const rows = CATEGORIES.map(cat => {
-      const budgetMonths = getBudgetRow(cat.id);
-      const planMonths   = yearTotals(cat.id, PLAN_ST);
-      const factMonths   = yearTotals(cat.id, FACT_ST);
-      return {
-        cat,
-        budgetMonths,
-        planMonths,
-        factMonths,
-        budgetTotal: budgetMonths.reduce((s,v)=>s+v,0),
-        planTotal:   planMonths.reduce((s,v)=>s+v,0),
-        factTotal:   factMonths.reduce((s,v)=>s+v,0),
-      };
-    });
-
-    // Group rows by cat.group
-    const groups = {};
-    rows.forEach(r => { const g=r.cat.group; if(!groups[g]) groups[g]=[]; groups[g].push(r); });
-
-    const colBudget = Array.from({length:12},(_,m)=>rows.reduce((s,r)=>s+r.budgetMonths[m],0));
-    const colPlan   = Array.from({length:12},(_,m)=>rows.reduce((s,r)=>s+r.planMonths[m],0));
-    const colFact   = Array.from({length:12},(_,m)=>rows.reduce((s,r)=>s+r.factMonths[m],0));
-    const grandBudget = colBudget.reduce((s,v)=>s+v,0);
-    const grandPlan   = colPlan.reduce((s,v)=>s+v,0);
-    const grandFact   = colFact.reduce((s,v)=>s+v,0);
-
-    const openCell = (catId, monthIdx, statusFilter, title) => {
-      const reqs = sumFor(catId, monthIdx, statusFilter);
-      if (reqs.length) setCellModal({ reqs, title });
+  // ── ROW EDITOR MODAL ─────────────────────────────────────────────────────
+  const RowEditor = ({ item, onClose }) => {
+    const isNew = item === 'new';
+    const [form, setForm] = React.useState(isNew
+      ? { branch: user.loginBranch||'', category:'', amount:'', deadline:'', counterparty:'', status:'Не оплачено', paidDate:'', comment:'' }
+      : { ...item }
+    );
+    const set = (k,v) => setForm(f=>({...f,[k]:v}));
+    const submit = () => {
+      if (!form.category || !form.amount || !form.deadline) return;
+      const newItem = { ...form, amount: Number(form.amount)||0, id: isNew ? Date.now().toString() : form.id };
+      const newList = isNew
+        ? [...calItems, newItem]
+        : calItems.map(it => it.id===newItem.id ? newItem : it);
+      save({ calendarItems: newList });
+      onClose();
     };
-
-    // Single cell per month: budget (editable) / plan / fact / deviation
-    const MonthCell = ({catId, m, budget, plan, fact}) => {
-      const isEditing = editCell?.catId===catId && editCell?.m===m;
-      const dev = budget>0 ? fact-budget : null;
-      return (
-        <td className="border border-gray-100 p-0 align-top" style={{minWidth:90}}>
-          {/* Budget row — editable for management */}
-          <div className="border-b border-blue-100 text-right" style={{background:'#EFF6FF'}}>
-            {isManagement ? (
-              isEditing ? (
-                <input autoFocus type="number"
-                       className="w-full px-1.5 py-0.5 text-[11px] text-blue-800 bg-blue-50 border-0 outline-none text-right"
-                       defaultValue={budget||''}
-                       onBlur={e=>{ saveBudgetCell(catId,m,e.target.value); setEditCell(null); }}
-                       onKeyDown={e=>{ if(e.key==='Enter'||e.key==='Escape') e.target.blur(); }}/>
-              ) : (
-                <div className="px-2 py-0.5 text-[11px] text-blue-700 cursor-pointer hover:bg-blue-100"
-                     title="Нажмите чтобы ввести бюджет"
-                     onClick={()=>setEditCell({catId,m,val:budget})}>
-                  {budget>0 ? fmt(budget) : <span className="text-blue-200">+бюджет</span>}
-                </div>
-              )
-            ) : (
-              <div className="px-2 py-0.5 text-[11px] text-blue-700">
-                {budget>0 ? fmt(budget) : <span className="text-gray-200">—</span>}
+    const del = () => {
+      if (!confirm('Удалить строку?')) return;
+      save({ calendarItems: calItems.filter(it=>it.id!==form.id) });
+      onClose();
+    };
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6" onClick={e=>e.stopPropagation()}>
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="font-bold text-gray-900 text-base">{isNew ? '+ Новый платёж' : 'Редактировать платёж'}</h3>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">✕</button>
+          </div>
+          <div className="space-y-3">
+            {isManagement && (
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Филиал</label>
+                <select className="input-field py-2 text-sm" value={form.branch} onChange={e=>set('branch',e.target.value)}>
+                  <option value="">— Все —</option>
+                  {allBranches.map(b=><option key={b} value={b}>{b}</option>)}
+                </select>
               </div>
             )}
-          </div>
-          {/* Plan */}
-          <div className="border-b border-amber-100 text-right" style={{background: plan>0?'#FFFBEB':'transparent'}}>
-            {plan>0 ? (
-              <div className="px-2 py-0.5 text-[11px] text-amber-700 cursor-pointer hover:bg-amber-100"
-                   onClick={()=>openCell(catId,m,PLAN_ST,`${MONTHS_SHORT[m]} · план`)}>
-                {fmt(plan)}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Статья расходов *</label>
+              <select className="input-field py-2 text-sm" value={form.category} onChange={e=>set('category',e.target.value)}>
+                <option value="">— Выберите —</option>
+                {calCats.map(c=><option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Сумма, ₸ *</label>
+                <input type="number" className="input-field py-2 text-sm" value={form.amount}
+                       onChange={e=>set('amount',e.target.value)} placeholder="0"/>
               </div>
-            ) : <div className="px-2 py-0.5 text-[11px] text-gray-200">—</div>}
-          </div>
-          {/* Fact */}
-          <div className="border-b border-green-100 text-right" style={{background: fact>0?'#F0FDF4':'transparent'}}>
-            {fact>0 ? (
-              <div className="px-2 py-0.5 text-[11px] text-green-700 cursor-pointer hover:bg-green-100"
-                   onClick={()=>openCell(catId,m,FACT_ST,`${MONTHS_SHORT[m]} · факт`)}>
-                {fmt(fact)}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Срок оплаты *</label>
+                <input type="date" className="input-field py-2 text-sm" value={form.deadline}
+                       onChange={e=>set('deadline',e.target.value)}/>
               </div>
-            ) : <div className="px-2 py-0.5 text-[11px] text-gray-200">—</div>}
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Контрагент / назначение</label>
+              <input type="text" className="input-field py-2 text-sm" value={form.counterparty||''}
+                     onChange={e=>set('counterparty',e.target.value)} placeholder="Поставщик, счёт, назначение…"/>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Статус</label>
+                <select className="input-field py-2 text-sm" value={form.status} onChange={e=>set('status',e.target.value)}>
+                  <option>Не оплачено</option>
+                  <option>Оплачено</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Дата оплаты</label>
+                <input type="date" className="input-field py-2 text-sm" value={form.paidDate||''}
+                       onChange={e=>set('paidDate',e.target.value)}
+                       disabled={form.status!=='Оплачено'}/>
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Комментарий</label>
+              <input type="text" className="input-field py-2 text-sm" value={form.comment||''}
+                     onChange={e=>set('comment',e.target.value)}/>
+            </div>
           </div>
-          {/* Deviation fact vs budget */}
-          <div className="text-right px-2 py-0.5 text-[10px]">
-            {dev!==null
-              ? <span style={{color:dev<=0?'#15803D':'#CF0000'}}>{dev>0?'+':''}{dev.toLocaleString('ru-RU')}</span>
-              : <span className="text-gray-200">—</span>}
+          <div className="flex gap-2 mt-5">
+            <button onClick={submit}
+                    disabled={!form.category||!form.amount||!form.deadline}
+                    className="btn-primary flex-1 py-2.5 text-sm disabled:opacity-40">
+              {isNew ? '✓ Добавить' : '💾 Сохранить'}
+            </button>
+            {!isNew && (
+              <button onClick={del} className="px-4 py-2.5 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 text-sm">
+                🗑
+              </button>
+            )}
           </div>
-        </td>
-      );
-    };
+        </div>
+      </div>
+    );
+  };
 
-    return (
-      <div>
+  // ── PAYMENTS TAB ──────────────────────────────────────────────────────────
+  const PaymentsTab = () => (
+    <div>
+      {/* Filters */}
+      <div className="flex flex-wrap gap-2 mb-4 items-center">
         {isManagement && (
-          <div className="flex items-center gap-2 mb-3 p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-700">
-            ✏️ <strong>Бюджет (синие ячейки)</strong> — кликните на ячейку чтобы ввести плановую сумму. Данные сохраняются автоматически.
-          </div>
+          <select className="input-field py-1.5 text-xs" style={{width:160}}
+                  value={filterBranch} onChange={e=>setFilterBranch(e.target.value)}>
+            <option value="all">Все филиалы</option>
+            {allBranches.map(b=><option key={b} value={b}>{b}</option>)}
+          </select>
         )}
-        <div className="overflow-x-auto rounded-2xl border border-gray-200 shadow-sm">
-          <table className="w-full text-sm border-collapse" style={{minWidth:1000}}>
+        <select className="input-field py-1.5 text-xs" style={{width:130}}
+                value={filterState} onChange={e=>setFilterState(e.target.value)}>
+          <option value="all">Все состояния</option>
+          {['Просрочено','Срочно','В срок','Оплачено'].map(s=><option key={s}>{s}</option>)}
+        </select>
+        <span className="text-xs text-gray-400 ml-auto">{filtered.length} строк</span>
+        {canEdit && (
+          <button onClick={()=>setEditRow('new')} className="btn-primary py-1.5 px-4 text-xs">
+            + Добавить платёж
+          </button>
+        )}
+      </div>
+
+      {/* Table */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm border-collapse" style={{minWidth:900}}>
             <thead>
               <tr style={{background:'#4D295D'}}>
-                <th className="text-left text-white text-xs font-semibold px-3 py-3 border-r border-purple-800 sticky left-0 z-10" style={{background:'#4D295D', minWidth:200}}>
-                  Статья расходов (ДДС)
-                </th>
-                {MONTHS_SHORT.map((m,i)=>(
-                  <th key={i} className="text-center text-white text-xs font-semibold px-1 py-3 border-r border-purple-800" style={{minWidth:80}}>{m}</th>
+                {['№','Статья расходов','Сумма, ₸','Срок оплаты','Контрагент / назначение','Статус','Дата оплаты','Дней до срока','Состояние','Комментарий'].map(h=>(
+                  <th key={h} className="text-left text-white text-xs font-semibold px-3 py-3 border-r border-purple-800 whitespace-nowrap last:border-r-0">{h}</th>
                 ))}
-                <th className="text-center text-white text-xs font-semibold px-2 py-3" style={{minWidth:90}}>ИТОГО</th>
-              </tr>
-              <tr style={{background:'#5C3070'}}>
-                <th className="px-3 py-1 text-left sticky left-0 text-[10px] font-normal" style={{background:'#5C3070'}}>
-                  <span style={{color:'#93C5FD'}}>■ бюджет</span> &nbsp;
-                  <span style={{color:'#FCD34D'}}>■ план</span> &nbsp;
-                  <span style={{color:'#86EFAC'}}>■ факт</span> &nbsp;
-                  <span style={{color:'#FCA5A5'}}>± откл</span>
-                </th>
-                {Array.from({length:13}).map((_,i)=><th key={i} className="border-r border-purple-800 py-1"/>)}
+                {canEdit && <th className="w-8"/>}
               </tr>
             </thead>
             <tbody>
-              {Object.entries(groups).map(([groupName, groupRows]) => (
-                <React.Fragment key={groupName}>
-                  <tr style={{background:'#F0EBF4'}}>
-                    <td colSpan={14} className="px-3 py-1.5 text-xs font-bold text-purple-800 sticky left-0" style={{background:'#F0EBF4'}}>
-                      {groupName}
+              {filtered.length === 0 && (
+                <tr><td colSpan={11} className="text-center text-gray-400 py-12 text-sm">
+                  {canEdit ? 'Нет платежей. Нажмите «+ Добавить платёж».' : 'Нет платежей.'}
+                </td></tr>
+              )}
+              {filtered.map((it, i) => {
+                const ss = STATE_STYLE[it._state] || STATE_STYLE['—'];
+                const dl = it._daysLeft;
+                return (
+                  <tr key={it.id||i} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                    <td className="px-3 py-2 text-xs text-gray-400 w-8">{i+1}</td>
+                    <td className="px-3 py-2 text-xs font-medium text-gray-800 max-w-[160px]">
+                      <div className="truncate">{it.category}</div>
+                      {it.branch && <div className="text-[10px] text-gray-400">{it.branch}</div>}
                     </td>
+                    <td className="px-3 py-2 text-sm font-bold text-gray-900 whitespace-nowrap text-right">
+                      {fmt(it.amount)} ₸
+                    </td>
+                    <td className="px-3 py-2 text-xs text-gray-700 whitespace-nowrap">
+                      {it.deadline ? new Date(it.deadline+'T00:00:00').toLocaleDateString('ru-RU') : '—'}
+                    </td>
+                    <td className="px-3 py-2 text-xs text-gray-600 max-w-[180px]">
+                      <div className="truncate">{it.counterparty||'—'}</div>
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+                            style={{background: it.status==='Оплачено'?'#DCFCE7':'#FEE2E2',
+                                    color:      it.status==='Оплачено'?'#15803D':'#B91C1C'}}>
+                        {it.status}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-xs text-gray-600 whitespace-nowrap">
+                      {it.paidDate ? new Date(it.paidDate+'T00:00:00').toLocaleDateString('ru-RU') : '—'}
+                    </td>
+                    <td className="px-3 py-2 text-xs font-bold text-center whitespace-nowrap"
+                        style={{color: it.status==='Оплачено'?'#9CA3AF': dl===null?'#9CA3AF': dl<0?'#B91C1C':dl<=7?'#D97706':'#374151'}}>
+                      {it.status==='Оплачено'?'—': dl===null?'—': dl<0?`−${Math.abs(dl)} дн.`:`${dl} дн.`}
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+                            style={{background: ss.bg, color: ss.text}}>
+                        <span className="inline-block w-1.5 h-1.5 rounded-full mr-1" style={{background:ss.dot}}/>
+                        {it._state}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-xs text-gray-500 max-w-[140px]">
+                      <div className="truncate">{it.comment||'—'}</div>
+                    </td>
+                    {canEdit && (
+                      <td className="px-2 py-2">
+                        <button onClick={()=>setEditRow(it)}
+                                className="text-gray-400 hover:text-purple-600 text-sm">✏️</button>
+                      </td>
+                    )}
                   </tr>
-                  {groupRows.map(({cat,budgetMonths,planMonths,factMonths,budgetTotal,planTotal,factTotal})=>(
-                    <tr key={cat.id} className="hover:bg-gray-50/60 transition-colors">
-                      <td className="border border-gray-100 px-3 sticky left-0 bg-white align-middle" style={{minWidth:200}}>
-                        <div className="text-xs text-gray-700 py-1 leading-tight">{cat.label}</div>
-                      </td>
-                      {Array.from({length:12},(_,m)=>(
-                        <MonthCell key={m} catId={cat.id} m={m}
-                          budget={budgetMonths[m]} plan={planMonths[m]} fact={factMonths[m]}/>
-                      ))}
-                      <td className="border border-gray-100 p-0 text-right" style={{background:'#F8F9FA', minWidth:90}}>
-                        <div className="px-2 py-0.5 text-[11px] text-blue-700 border-b border-gray-100">{budgetTotal>0?fmt(budgetTotal):'—'}</div>
-                        <div className="px-2 py-0.5 text-[11px] text-amber-700 border-b border-gray-100">{planTotal>0?fmt(planTotal):'—'}</div>
-                        <div className="px-2 py-0.5 text-[11px] text-green-700 border-b border-gray-100">{factTotal>0?fmt(factTotal):'—'}</div>
-                        <div className="px-2 py-0.5 text-[10px]">
-                          {budgetTotal>0&&factTotal>0
-                            ? <span style={{color:factTotal<=budgetTotal?'#15803D':'#CF0000'}}>{Math.round(factTotal/budgetTotal*100)}%</span>
-                            : <span className="text-gray-200">—</span>}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </React.Fragment>
-              ))}
+                );
+              })}
             </tbody>
-            <tfoot>
-              <tr style={{background:'#E8E0F0'}}>
-                <td className="border border-gray-300 px-3 py-0 text-xs font-bold text-purple-900 sticky left-0" style={{background:'#E8E0F0'}}>
-                  <div className="py-0.5 border-b border-purple-200 text-blue-800">ИТОГО · бюджет</div>
-                  <div className="py-0.5 border-b border-purple-200 text-amber-800">ИТОГО · план</div>
-                  <div className="py-0.5 border-b border-purple-200 text-green-800">ИТОГО · факт</div>
-                  <div className="py-0.5 text-purple-700">исполнение %</div>
-                </td>
-                {Array.from({length:12},(_,m)=>(
-                  <td key={m} className="border border-gray-300 p-0 text-right" style={{background:'#E8E0F0'}}>
-                    <div className="px-2 py-0.5 text-[11px] text-blue-700 font-semibold border-b border-purple-200" style={{background:'#EFF6FF'}}>
-                      {colBudget[m]>0?fmt(colBudget[m]):<span className="text-gray-300">—</span>}
-                    </div>
-                    <div className="px-2 py-0.5 text-[11px] text-amber-700 font-semibold border-b border-purple-200">
-                      {colPlan[m]>0?fmt(colPlan[m]):<span className="text-gray-300">—</span>}
-                    </div>
-                    <div className="px-2 py-0.5 text-[11px] text-green-700 font-semibold border-b border-purple-200">
-                      {colFact[m]>0?fmt(colFact[m]):<span className="text-gray-300">—</span>}
-                    </div>
-                    <div className="px-2 py-0.5 text-[11px] font-bold text-center">
-                      {colBudget[m]>0
-                        ? <span style={{color:colFact[m]<=colBudget[m]?'#15803D':colFact[m]/colBudget[m]<=1.1?'#92400E':'#CF0000'}}>
-                            {Math.round(colFact[m]/colBudget[m]*100)}%
-                          </span>
-                        : colFact[m]>0?<span className="text-red-400 text-[10px]">нет бюдж</span>
-                        : <span className="text-gray-300">—</span>}
-                    </div>
+            {filtered.length > 0 && (
+              <tfoot>
+                <tr style={{background:'#F8F9FA'}}>
+                  <td colSpan={2} className="px-3 py-2 text-xs font-bold text-gray-700">ИТОГО</td>
+                  <td className="px-3 py-2 text-sm font-bold text-gray-900 text-right whitespace-nowrap">
+                    {fmt(filtered.reduce((s,it)=>s+(it.amount||0),0))} ₸
                   </td>
-                ))}
-                <td className="border border-gray-300 p-0 text-right font-bold" style={{background:'#D8C8E8'}}>
-                  <div className="px-2 py-0.5 text-[11px] text-blue-700 border-b border-purple-300" style={{background:'#DBEAFE'}}>{grandBudget>0?fmt(grandBudget):'—'}</div>
-                  <div className="px-2 py-0.5 text-[11px] text-amber-700 border-b border-purple-300">{grandPlan>0?fmt(grandPlan):'—'}</div>
-                  <div className="px-2 py-0.5 text-[11px] text-green-700 border-b border-purple-300">{grandFact>0?fmt(grandFact):'—'}</div>
-                  <div className="px-2 py-0.5 text-[11px] text-center">
-                    {grandBudget>0
-                      ? <span style={{color:grandFact<=grandBudget?'#15803D':'#CF0000'}}>{Math.round(grandFact/grandBudget*100)}%</span>
-                      : '—'}
-                  </div>
-                </td>
-              </tr>
-            </tfoot>
+                  <td colSpan={canEdit?8:7}/>
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
       </div>
-    );
-  };
+    </div>
+  );
 
-  // ── MONTHLY CALENDAR VIEW ──────────────────────────────────────────────────
-  const MonthView = () => {
-    const byDate = {};
-    visible.filter(r => {
-      const d = new Date(r.dueDate);
-      return d.getFullYear()===viewYear && d.getMonth()===activeMonth;
-    }).forEach(r => {
-      const key = r.dueDate.slice(0,10);
-      if (!byDate[key]) byDate[key] = [];
-      byDate[key].push(r);
+  // ── SUMMARY TAB ───────────────────────────────────────────────────────────
+  const SummaryTab = () => {
+    // Collect months from deadlines (rolling 12)
+    const now = new Date(); now.setDate(1); now.setHours(0,0,0,0);
+    const months = Array.from({length:12},(_,i)=>{
+      const d = new Date(now.getFullYear(), now.getMonth()+i, 1);
+      return { key: `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`, label: `${MONTHS_SHORT[d.getMonth()]} ${d.getFullYear()}` };
     });
 
-    const firstDay = new Date(viewYear, activeMonth, 1);
-    const lastDay  = new Date(viewYear, activeMonth+1, 0);
-    const offset   = (firstDay.getDay()+6)%7;
-    const days = [];
-    for (let i=0; i<offset; i++) days.push(null);
-    for (let d=1; d<=lastDay.getDate(); d++) days.push(d);
-
-    const todayStr = new Date().toISOString().slice(0,10);
-    const STATUS_COLOR = {
-      new:      {bg:'#EDE9FE', text:'#5B21B6'},
-      manager:  {bg:'#FEF9C3', text:'#854D0E'},
-      approved: {bg:'#DCFCE7', text:'#15803D'},
-      paid:     {bg:'#DBEAFE', text:'#1A4DAB'},
+    const getMonthKey = (dateStr) => {
+      if (!dateStr) return null;
+      return dateStr.slice(0,7);
     };
 
+    const usedCats = [...new Set(enriched.map(it=>it.category))].filter(Boolean);
+    const allCats  = [...new Set([...calCats, ...usedCats])];
+
+    // Build matrix: cat → month → { planned, paid }
+    const matrix = {};
+    allCats.forEach(cat => { matrix[cat] = {}; months.forEach(m=>{ matrix[cat][m.key]={planned:0, paid:0}; }); });
+    enriched.forEach(it => {
+      const mk = getMonthKey(it.deadline);
+      if (!mk || !matrix[it.category]) return;
+      if (!matrix[it.category][mk]) return;
+      matrix[it.category][mk].planned += (it.amount||0);
+      if (it.status==='Оплачено') matrix[it.category][mk].paid += (it.amount||0);
+    });
+
+    // Only show cats with any data
+    const activeCats = allCats.filter(cat => months.some(m=>(matrix[cat]?.[m.key]?.planned||0)>0));
+    if (activeCats.length===0) return (
+      <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center text-gray-400 text-sm">
+        Добавьте платежи на вкладке «Платежи» — здесь появится сводка по статьям и месяцам.
+      </div>
+    );
+
+    const colPlanned = months.map(m=>activeCats.reduce((s,c)=>s+(matrix[c]?.[m.key]?.planned||0),0));
+    const colPaid    = months.map(m=>activeCats.reduce((s,c)=>s+(matrix[c]?.[m.key]?.paid||0),0));
+    const colLeft    = months.map((_,i)=>colPlanned[i]-colPaid[i]);
+    const colOver    = months.map(m=>enriched.filter(it=>it._state==='Просрочено'&&getMonthKey(it.deadline)===m.key).reduce((s,it)=>s+(it.amount||0),0));
+    const totP = activeCats.reduce((s,c)=>s+months.reduce((ss,m)=>ss+(matrix[c]?.[m.key]?.planned||0),0),0);
+    const totPd= activeCats.reduce((s,c)=>s+months.reduce((ss,m)=>ss+(matrix[c]?.[m.key]?.paid||0),0),0);
+
     return (
-      <div>
-        {/* Month tabs */}
-        <div className="flex flex-wrap gap-1 mb-4">
-          {MONTHS_SHORT.map((m,i) => (
-            <button key={i} onClick={()=>setActiveMonth(i)}
-                    className="px-3 py-1 rounded-lg text-xs font-medium transition-all"
-                    style={activeMonth===i
-                      ? {background:'#4D295D', color:'#fff'}
-                      : {background:'#F3F4F6', color:'#6B7280'}}>
-              {m}
-            </button>
-          ))}
-        </div>
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="grid grid-cols-7 border-b border-gray-100">
-            {DOW_RU.map(d=>(
-              <div key={d} className="text-center text-xs font-semibold py-2"
-                   style={{color:d==='Сб'||d==='Вс'?'#9CA3AF':'#6B7280'}}>{d}</div>
-            ))}
-          </div>
-          <div className="grid grid-cols-7">
-            {days.map((day,i)=>{
-              const dateStr = day ? `${viewYear}-${String(activeMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}` : null;
-              const reqs    = dateStr ? (byDate[dateStr]||[]) : [];
-              const isToday = dateStr===todayStr;
-              const isWeekend = (i%7)===5||(i%7)===6;
-              const daySum  = reqs.reduce((s,r)=>s+(r.amount||0),0);
+      <div className="overflow-x-auto rounded-2xl border border-gray-200 shadow-sm">
+        <table className="w-full text-sm border-collapse" style={{minWidth:800}}>
+          <thead>
+            <tr style={{background:'#4D295D'}}>
+              <th className="text-left text-white text-xs font-semibold px-4 py-3 border-r border-purple-800 sticky left-0 z-10" style={{background:'#4D295D', minWidth:200}}>
+                Статья расходов
+              </th>
+              {months.map(m=>(
+                <th key={m.key} className="text-center text-white text-xs font-semibold px-2 py-3 border-r border-purple-800 whitespace-nowrap" style={{minWidth:90}}>
+                  {m.label}
+                </th>
+              ))}
+              <th className="text-center text-white text-xs font-semibold px-3 py-3 whitespace-nowrap">Итого</th>
+            </tr>
+          </thead>
+          <tbody>
+            {activeCats.map(cat=>{
+              const rowTotal = months.reduce((s,m)=>s+(matrix[cat]?.[m.key]?.planned||0),0);
+              const rowPaid  = months.reduce((s,m)=>s+(matrix[cat]?.[m.key]?.paid||0),0);
               return (
-                <div key={i} className="min-h-[90px] border-b border-r border-gray-100 p-1.5"
-                     style={{background:!day?'#FAFAFA':isWeekend?'#FAFBFF':'#fff'}}>
-                  {day && (<>
-                    <div className={`text-xs font-semibold mb-1 w-6 h-6 flex items-center justify-center rounded-full`}
-                         style={isToday?{background:'#4D295D',color:'#fff'}:{color:isWeekend?'#9CA3AF':'#374151'}}>
-                      {day}
-                    </div>
-                    {reqs.length>0 && (
-                      <div className="flex flex-col gap-0.5">
-                        {reqs.slice(0,3).map(r=>{
-                          const sc=STATUS_COLOR[r.status]||{bg:'#F3F4F6',text:'#6B7280'};
-                          return (
-                            <div key={r.id} className="text-[10px] px-1.5 py-0.5 rounded cursor-pointer truncate"
-                                 style={{background:sc.bg,color:sc.text}}
-                                 onClick={()=>setCellModal({reqs:[r],title:r.requestName||r.id})}>
-                              {(r.amount||0).toLocaleString('ru-RU')} ₸
-                            </div>
-                          );
-                        })}
-                        {reqs.length>3 && <div className="text-[10px] text-gray-400 pl-1">+{reqs.length-3} ещё</div>}
-                        {daySum>0 && reqs.length>1 && (
-                          <div className="text-[10px] font-semibold text-gray-600 border-t border-gray-100 pt-0.5 mt-0.5 cursor-pointer"
-                               onClick={()=>setCellModal({reqs,title:`${day} ${MONTHS_SHORT[activeMonth]}`})}>
-                            Σ {daySum.toLocaleString('ru-RU')} ₸
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </>)}
-                </div>
+                <tr key={cat} className="border-b border-gray-100 hover:bg-purple-50/20">
+                  <td className="px-4 py-2 text-xs font-medium text-gray-700 sticky left-0 bg-white">{cat}</td>
+                  {months.map(m=>{
+                    const v = matrix[cat]?.[m.key]?.planned||0;
+                    const p = matrix[cat]?.[m.key]?.paid||0;
+                    return (
+                      <td key={m.key} className="px-2 py-2 text-right border-r border-gray-100">
+                        {v>0 ? <>
+                          <div className="text-xs font-semibold text-gray-800">{fmt(v)}</div>
+                          {p>0 && <div className="text-[10px] text-green-600">✓ {fmt(p)}</div>}
+                        </> : <span className="text-gray-200 text-xs">—</span>}
+                      </td>
+                    );
+                  })}
+                  <td className="px-3 py-2 text-right font-bold" style={{background:'#F8F9FA'}}>
+                    <div className="text-xs text-gray-800">{rowTotal>0?fmt(rowTotal):'—'}</div>
+                    {rowPaid>0&&<div className="text-[10px] text-green-600">✓ {fmt(rowPaid)}</div>}
+                  </td>
+                </tr>
               );
             })}
-          </div>
-        </div>
-        {/* Legend */}
-        <div className="flex flex-wrap gap-3 mt-3">
-          {[['new','#EDE9FE','#5B21B6','Новая'],['manager','#FEF9C3','#854D0E','У учредителя'],
-            ['approved','#DCFCE7','#15803D','Одобрена'],['paid','#DBEAFE','#1A4DAB','Оплачена']].map(([k,bg,text,label])=>(
-            <div key={k} className="flex items-center gap-1.5 text-xs">
-              <div className="w-3 h-3 rounded" style={{background:bg,border:`1px solid ${text}33`}}/>
-              <span className="text-gray-600">{label}</span>
-            </div>
-          ))}
-        </div>
+          </tbody>
+          <tfoot>
+            {[
+              {label:'ИТОГО запланировано', vals:colPlanned, total:totP, cls:'text-gray-900', bg:'#F0EBF4'},
+              {label:'в т.ч. оплачено',     vals:colPaid,    total:totPd, cls:'text-green-700', bg:'#F0FDF4'},
+              {label:'Остаток к оплате',    vals:colLeft,    total:totP-totPd, cls:'text-amber-700', bg:'#FFFBEB'},
+              {label:'из остатка — просрочено', vals:colOver, total:colOver.reduce((s,v)=>s+v,0), cls:'text-red-600', bg:'#FEF2F2'},
+            ].map(row=>(
+              <tr key={row.label} style={{background:row.bg}}>
+                <td className="px-4 py-2 text-xs font-bold sticky left-0" style={{background:row.bg, color:'#374151'}}>{row.label}</td>
+                {months.map((m,i)=>(
+                  <td key={m.key} className="px-2 py-2 text-right text-xs font-semibold border-r border-gray-200">
+                    <span className={row.vals[i]>0?row.cls:'text-gray-300'}>
+                      {row.vals[i]>0?fmt(row.vals[i]):'—'}
+                    </span>
+                  </td>
+                ))}
+                <td className="px-3 py-2 text-right text-xs font-bold" style={{color:row.total>0?'#1F2937':'#9CA3AF'}}>
+                  {row.total>0?fmt(row.total):'—'}
+                </td>
+              </tr>
+            ))}
+          </tfoot>
+        </table>
       </div>
     );
   };
 
-  // Monthly KPI cards
-  const monthReqs = visible.filter(r=>{
-    if (!r.dueDate) return false;
-    const d = new Date(r.dueDate);
-    return d.getFullYear()===viewYear && d.getMonth()===activeMonth;
-  });
-  const planSum = monthReqs.filter(r=>['new','manager','approved'].includes(r.status)).reduce((s,r)=>s+(r.amount||0),0);
-  const factSum = monthReqs.filter(r=>r.status==='paid').reduce((s,r)=>s+(r.amount||0),0);
-  const pct     = planSum>0 ? Math.round(factSum/planSum*100) : null;
+  // ── REFERENCE TAB ────────────────────────────────────────────────────────
+  const ReferenceTab = () => {
+    const [cats, setCats]   = React.useState([...calCats]);
+    const [newCat, setNewCat] = React.useState('');
+    const [dirty, setDirty]   = React.useState(false);
+
+    const addCat = () => {
+      const t = newCat.trim();
+      if (!t || cats.includes(t)) return;
+      setCats(c=>[...c,t]); setNewCat(''); setDirty(true);
+    };
+    const removeCat = (c) => { setCats(prev=>prev.filter(x=>x!==c)); setDirty(true); };
+    const moveCat = (i, dir) => {
+      const arr=[...cats]; const j=i+dir;
+      if(j<0||j>=arr.length) return;
+      [arr[i],arr[j]]=[arr[j],arr[i]]; setCats(arr); setDirty(true);
+    };
+    const saveRef = () => { save({ calendarCategories: cats }); setDirty(false); };
+
+    return (
+      <div className="max-w-lg">
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+          <h3 className="font-bold text-gray-900 mb-1 text-sm">Статьи расходов</h3>
+          <p className="text-xs text-gray-500 mb-4">Используются в выпадающих меню при добавлении платежа и в форме заявки.</p>
+          <div className="space-y-1 mb-4 max-h-80 overflow-y-auto pr-1">
+            {cats.map((c,i)=>(
+              <div key={c} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-100 hover:bg-gray-50 group">
+                <div className="flex flex-col gap-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onClick={()=>moveCat(i,-1)} disabled={i===0} className="text-gray-400 hover:text-gray-600 text-[10px] leading-none disabled:opacity-20">▲</button>
+                  <button onClick={()=>moveCat(i,+1)} disabled={i===cats.length-1} className="text-gray-400 hover:text-gray-600 text-[10px] leading-none disabled:opacity-20">▼</button>
+                </div>
+                <span className="text-xs text-gray-700 flex-1">{c}</span>
+                {canEdit && (
+                  <button onClick={()=>removeCat(c)} className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 text-xs transition-opacity">✕</button>
+                )}
+              </div>
+            ))}
+          </div>
+          {canEdit && (<>
+            <div className="flex gap-2 mb-3">
+              <input type="text" className="input-field py-2 text-sm flex-1" placeholder="Новая статья расходов…"
+                     value={newCat} onChange={e=>setNewCat(e.target.value)}
+                     onKeyDown={e=>{ if(e.key==='Enter') addCat(); }}/>
+              <button onClick={addCat} disabled={!newCat.trim()} className="btn-primary px-4 py-2 text-sm disabled:opacity-40">+ Добавить</button>
+            </div>
+            {dirty && (
+              <button onClick={saveRef} className="btn-primary w-full py-2.5 text-sm">💾 Сохранить изменения</button>
+            )}
+          </>)}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="max-w-screen-xl mx-auto px-4 py-6">
@@ -3127,60 +3150,48 @@ function PaymentCalendarView({ requests, user, settings, onSaveSettings }) {
       <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
         <div>
           <h2 className="text-xl font-bold text-gray-900">📅 Платёжный календарь</h2>
-          <p className="text-sm text-gray-500 mt-0.5">
-            {selectedBranch==='all' ? 'Все филиалы' : selectedBranch} · {viewYear}
-          </p>
+          <p className="text-xs text-gray-500 mt-0.5">Сегодня: {today.toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'})}</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {isManagement && (
-            <select className="input-field py-2 text-sm" style={{width:180}}
-                    value={selectedBranch} onChange={e=>setSelectedBranch(e.target.value)}>
-              <option value="all">Все филиалы</option>
-              {allBranches.map(b=><option key={b} value={b}>{b}</option>)}
-            </select>
-          )}
-          <div className="flex items-center gap-1 border border-gray-200 rounded-lg overflow-hidden">
-            <button onClick={()=>setViewYear(y=>y-1)} className="px-3 py-2 hover:bg-gray-100 text-sm text-gray-600">◀</button>
-            <span className="px-3 py-2 text-sm font-semibold text-gray-900 border-l border-r border-gray-200">{viewYear}</span>
-            <button onClick={()=>setViewYear(y=>y+1)} className="px-3 py-2 hover:bg-gray-100 text-sm text-gray-600">▶</button>
-          </div>
-          {/* View toggle */}
-          <div className="flex rounded-lg border border-gray-200 overflow-hidden">
-            {[['dds','📊 ДДС'],['month','📅 Месяц']].map(([v,label])=>(
-              <button key={v} onClick={()=>setActiveView(v)}
-                      className="px-4 py-2 text-sm font-medium transition-all"
-                      style={activeView===v?{background:'#4D295D',color:'#fff'}:{color:'#6B7280'}}>
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
+        {!canEdit && <span className="text-xs text-gray-400 bg-gray-100 px-3 py-1 rounded-full">Только просмотр</span>}
       </div>
 
-      {/* KPI row — only in month view */}
-      {activeView==='month' && (
-        <div className="grid grid-cols-4 gap-3 mb-5">
-          {[
-            {label:'Заявок', value:monthReqs.length, unit:'шт.', color:'#4D295D'},
-            {label:'План к оплате', value:fmt(planSum)+' ₸', color:'#92400E'},
-            {label:'Факт оплачено', value:fmt(factSum)+' ₸', color:'#15803D'},
-            {label:'Исполнение', value: pct!==null?pct+'%':'—',
-             color: pct===null?'#9CA3AF':pct>=100?'#15803D':pct>=50?'#92400E':'#CF0000'},
-          ].map(s=>(
-            <div key={s.label} className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-              <div className="text-xs text-gray-500 mb-1">{s.label}</div>
-              <div className="text-lg font-bold" style={{color:s.color}}>{s.value}</div>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* KPI cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        {[
+          { label:'К оплате всего',        value: fmt(totalDue)+' ₸',   color:'#4D295D', bg:'#F5F0F8' },
+          { label:'Просрочено',             value: fmt(totalOverdue)+' ₸', color:'#B91C1C', bg:'#FEF2F2' },
+          { label:'Срочно (≤7 дней)',       value: fmt(totalUrgent)+' ₸',  color:'#A16207', bg:'#FFFBEB' },
+          { label:'Оплачено',               value: fmt(totalPaid)+' ₸',    color:'#15803D', bg:'#F0FDF4' },
+        ].map(s=>(
+          <div key={s.label} className="rounded-xl border p-4" style={{background:s.bg, borderColor: s.color+'33'}}>
+            <div className="text-xs font-medium mb-1" style={{color:s.color+'AA'}}>{s.label}</div>
+            <div className="text-lg font-bold" style={{color:s.color}}>{s.value}</div>
+          </div>
+        ))}
+      </div>
 
-      {activeView==='dds'   && <DDSView/>}
-      {activeView==='month' && <MonthView/>}
+      {/* Sub-tabs */}
+      <div className="flex gap-1 mb-4 border-b border-gray-200">
+        {[
+          ['payments','📋 Платежи'],
+          ['summary', '📊 Сводка'],
+          ...(canEdit ? [['reference','⚙️ Справочник']] : []),
+        ].map(([v,label])=>(
+          <button key={v} onClick={()=>setTab(v)}
+                  className="px-4 py-2 text-sm font-medium rounded-t-lg transition-all border-b-2"
+                  style={tab===v
+                    ? {borderColor:'#4D295D', color:'#4D295D', background:'#fff'}
+                    : {borderColor:'transparent', color:'#6B7280'}}>
+            {label}
+          </button>
+        ))}
+      </div>
 
-      {cellModal && (
-        <CellDetailModal reqs={cellModal.reqs} title={cellModal.title} onClose={()=>setCellModal(null)}/>
-      )}
+      {tab==='payments'  && <PaymentsTab/>}
+      {tab==='summary'   && <SummaryTab/>}
+      {tab==='reference' && <ReferenceTab/>}
+
+      {editRow && <RowEditor item={editRow} onClose={()=>setEditRow(null)}/>}
     </div>
   );
 }
