@@ -123,13 +123,64 @@ const BRANCH_ABBR = {
 };
 
 const CATEGORIES = [
-  { id: 'rent',      label: 'Аренда',         icon: '🏢' },
-  { id: 'suppliers', label: 'Поставщики',      icon: '📦' },
-  { id: 'services',  label: 'Услуги',          icon: '🔧' },
-  { id: 'utilities', label: 'Коммунальные',    icon: '💡' },
-  { id: 'salary',    label: 'Зарплата / ФОТ', icon: '👥' },
-  { id: 'other',     label: 'Прочее',          icon: '📋' },
+  // Аренда и коммунальные
+  { id: 'rent_commercial',   label: 'Аренда нежилого помещения',             group: 'Аренда и коммунальные' },
+  { id: 'utilities_comm',    label: 'Ком. услуги нежилого помещения',        group: 'Аренда и коммунальные' },
+  { id: 'rent_residential',  label: 'Аренда жилого помещения',               group: 'Аренда и коммунальные' },
+  { id: 'utilities_res',     label: 'Ком. услуги жилого помещения',          group: 'Аренда и коммунальные' },
+  // Операционные расходы
+  { id: 'telecom',           label: 'Услуги связи',                          group: 'Операционные расходы' },
+  { id: 'repairs',           label: 'Текущие ремонты, приобретение МБС',     group: 'Операционные расходы' },
+  { id: 'services_sales',    label: 'Расходы по реализации услуг',           group: 'Операционные расходы' },
+  { id: 'laundry',           label: 'Прачечные услуги',                      group: 'Операционные расходы' },
+  { id: 'cleaning',          label: 'Клининг',                               group: 'Операционные расходы' },
+  { id: 'delivery',          label: 'Почта, доставка, такси',                group: 'Операционные расходы' },
+  { id: 'corp_events',       label: 'Корпоративные мероприятия',             group: 'Операционные расходы' },
+  { id: 'it',                label: 'IT инфраструктура',                     group: 'Операционные расходы' },
+  { id: 'printing',          label: 'Типографические услуги',                group: 'Операционные расходы' },
+  { id: 'marketing',         label: 'Расходы на маркетинг',                  group: 'Операционные расходы' },
+  { id: 'office',            label: 'Обслуживание орг.техники, хозтовары, канцтовары', group: 'Операционные расходы' },
+  { id: 'training',          label: 'Обучение персонала, проф. услуги',      group: 'Операционные расходы' },
+  { id: 'legal',             label: 'Юридические услуги, нотариус',          group: 'Операционные расходы' },
+  { id: 'capex_repair',      label: 'Капитальный ремонт',                    group: 'Операционные расходы' },
+  // Персонал
+  { id: 'masters_support',   label: 'Содержание мастеров',                   group: 'Персонал' },
+  { id: 'masters_outfit',    label: 'Оформление мастеров',                   group: 'Персонал' },
+  { id: 'masters_travel',    label: 'Командировочные мастеров',              group: 'Персонал' },
+  { id: 'salary_masters',    label: 'З/п мастеров',                         group: 'Персонал' },
+  { id: 'masters_percent',   label: 'Проценты мастеров',                    group: 'Персонал' },
+  { id: 'salary_admin',      label: 'З/п админов',                          group: 'Персонал' },
+  { id: 'bonus_admin',       label: 'Бонусы админов',                       group: 'Персонал' },
+  { id: 'salary_callcenter', label: 'З/п колл-центра',                      group: 'Персонал' },
+  { id: 'bonus_callcenter',  label: 'Бонусы колл-центра',                   group: 'Персонал' },
+  { id: 'salary_tech',       label: 'З/п техперсонал',                      group: 'Персонал' },
+  { id: 'salary_aup',        label: 'З/п АУП',                             group: 'Персонал' },
+  { id: 'salary_founder',    label: 'Зарплата учредителя',                  group: 'Персонал' },
+  { id: 'contractors',       label: 'Договорники',                           group: 'Персонал' },
+  { id: 'travel',            label: 'Командировочные расходы',               group: 'Персонал' },
+  // Налоги и финансы
+  { id: 'fot_tax',           label: 'Налоги на ФОТ',                        group: 'Налоги и финансы' },
+  { id: 'masters_tax',       label: 'Налоги мастеров',                      group: 'Налоги и финансы' },
+  { id: 'taxes',             label: 'Налоги',                               group: 'Налоги и финансы' },
+  { id: 'bank_fee',          label: 'Комиссия банка',                       group: 'Налоги и финансы' },
+  { id: 'loan_interest',     label: 'Проценты по кредиту',                  group: 'Налоги и финансы' },
+  // Инвестиции
+  { id: 'capex_buy',         label: 'Покупка ОС',                           group: 'Инвестиции' },
+  { id: 'capex_sell',        label: 'Продажа ОС',                           group: 'Инвестиции' },
+  // Прочее
+  { id: 'other',             label: 'Прочее',                               group: 'Прочее' },
 ];
+
+// Обратная совместимость: старые id → новые
+const CATEGORY_LEGACY = {
+  rent: 'rent_commercial', suppliers: 'services_sales',
+  services: 'legal', utilities: 'utilities_comm', salary: 'salary_admin',
+};
+const resolveCatId = id => CATEGORY_LEGACY[id] || id;
+const getCatLabel  = id => {
+  const resolved = resolveCatId(id);
+  return (CATEGORIES.find(c => c.id === resolved) || {}).label || id;
+};
 
 const STATUSES = {
   new:      { label: 'Новая',          color: '#4D295D', bg: '#f5f0f8', icon: '🔵' },
@@ -2329,18 +2380,23 @@ function NewRequestForm({ user, requests, onSubmit, settings, editingReq, onSave
 
             {/* 02·B Category */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Категория расходов *</label>
-              <div className="grid grid-cols-3 gap-2">
-                {CATEGORIES.map(c=>(
-                  <button key={c.id} type="button"
-                          onClick={()=>{ set('category',c.id); setErrors(er=>({...er,category:''})); }}
-                          className={`p-3 rounded-xl border-2 text-center transition-all ${
-                            form.category===c.id ? 'border-yellow-500 bg-yellow-50' : 'border-gray-200 hover:border-gray-300 bg-white'}`}>
-                    <div className="text-xl">{c.icon}</div>
-                    <div className="text-xs font-medium text-gray-700 mt-1 leading-tight">{c.label}</div>
-                  </button>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Статья расходов (ДДС) *</label>
+              <select className="input-field" value={form.category}
+                      onChange={e=>{ set('category', e.target.value); setErrors(er=>({...er,category:''})); }}>
+                <option value="">— Выберите статью —</option>
+                {Object.entries(
+                  CATEGORIES.reduce((acc, c) => { (acc[c.group]||(acc[c.group]=[])).push(c); return acc; }, {})
+                ).map(([group, cats]) => (
+                  <optgroup key={group} label={group}>
+                    {cats.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                  </optgroup>
                 ))}
-              </div>
+              </select>
+              {form.category && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Группа: <span className="font-medium">{(CATEGORIES.find(c=>c.id===form.category)||{}).group}</span>
+                </p>
+              )}
               {errors.category && <p className="text-xs text-red-500 mt-1">{errors.category}</p>}
             </div>
 
@@ -2695,7 +2751,7 @@ function CellDetailModal({ reqs, title, onClose }) {
   );
 }
 
-function PaymentCalendarView({ requests, user, settings }) {
+function PaymentCalendarView({ requests, user, settings, onSaveSettings }) {
   const cfg = settings || DEFAULT_SETTINGS;
   const allBranches = cfg.branches || ['Головной офис', ...BRANCHES];
   const isManagement = ['manager','admin','treasurer'].includes(user.role);
@@ -2726,142 +2782,227 @@ function PaymentCalendarView({ requests, user, settings }) {
     });
   };
 
-  const fmt = n => n ? n.toLocaleString('ru-RU') : '—';
+  const fmt    = n => n ? n.toLocaleString('ru-RU') : '—';
+  const fmtDev = (fact, budget) => {
+    if (!budget) return null;
+    const dev = fact - budget;
+    return { val: Math.abs(dev).toLocaleString('ru-RU'), pos: dev >= 0, pct: Math.round(Math.abs(dev)/budget*100) };
+  };
+
+  // Budget key: year__branch__catId
+  const budgetKey = (catId) => `${viewYear}__${selectedBranch}__${catId}`;
+  const getBudgetRow = (catId) => {
+    const raw = (settings?.ddsBudget || {})[budgetKey(catId)];
+    return raw ? raw : Array(12).fill(0);
+  };
+  const saveBudgetCell = (catId, monthIdx, val) => {
+    const row = [...getBudgetRow(catId)];
+    row[monthIdx] = Number(val) || 0;
+    const updated = { ...(settings?.ddsBudget || {}), [budgetKey(catId)]: row };
+    if (onSaveSettings) onSaveSettings({ ...settings, ddsBudget: updated });
+  };
 
   // ── DDS TABLE VIEW ─────────────────────────────────────────────────────────
   const DDSView = () => {
-    // Annual totals per category per month: plan (approved+pending) and fact (paid)
-    const PLAN_ST  = ['new','manager','approved'];
-    const FACT_ST  = ['paid'];
+    const PLAN_ST = ['new','manager','approved'];
+    const FACT_ST = ['paid'];
+    const [editCell, setEditCell] = React.useState(null); // {catId, m, val}
 
     const yearTotals = (catId, statusFilter) =>
       Array.from({length:12},(_,m)=>sumFor(catId,m,statusFilter).reduce((s,r)=>s+(r.amount||0),0));
 
+    // All CATEGORIES — always show all rows (budget may be filled even without requests)
     const rows = CATEGORIES.map(cat => {
-      const planMonths = yearTotals(cat.id, PLAN_ST);
-      const factMonths = yearTotals(cat.id, FACT_ST);
-      const planTotal  = planMonths.reduce((s,v)=>s+v,0);
-      const factTotal  = factMonths.reduce((s,v)=>s+v,0);
-      return { cat, planMonths, factMonths, planTotal, factTotal };
-    }).filter(r => r.planTotal > 0 || r.factTotal > 0);
+      const budgetMonths = getBudgetRow(cat.id);
+      const planMonths   = yearTotals(cat.id, PLAN_ST);
+      const factMonths   = yearTotals(cat.id, FACT_ST);
+      return {
+        cat,
+        budgetMonths,
+        planMonths,
+        factMonths,
+        budgetTotal: budgetMonths.reduce((s,v)=>s+v,0),
+        planTotal:   planMonths.reduce((s,v)=>s+v,0),
+        factTotal:   factMonths.reduce((s,v)=>s+v,0),
+      };
+    });
 
-    // Column totals
-    const colPlan = Array.from({length:12},(_,m)=>rows.reduce((s,r)=>s+r.planMonths[m],0));
-    const colFact = Array.from({length:12},(_,m)=>rows.reduce((s,r)=>s+r.factMonths[m],0));
-    const grandPlan = colPlan.reduce((s,v)=>s+v,0);
-    const grandFact = colFact.reduce((s,v)=>s+v,0);
+    // Group rows by cat.group
+    const groups = {};
+    rows.forEach(r => { const g=r.cat.group; if(!groups[g]) groups[g]=[]; groups[g].push(r); });
+
+    const colBudget = Array.from({length:12},(_,m)=>rows.reduce((s,r)=>s+r.budgetMonths[m],0));
+    const colPlan   = Array.from({length:12},(_,m)=>rows.reduce((s,r)=>s+r.planMonths[m],0));
+    const colFact   = Array.from({length:12},(_,m)=>rows.reduce((s,r)=>s+r.factMonths[m],0));
+    const grandBudget = colBudget.reduce((s,v)=>s+v,0);
+    const grandPlan   = colPlan.reduce((s,v)=>s+v,0);
+    const grandFact   = colFact.reduce((s,v)=>s+v,0);
 
     const openCell = (catId, monthIdx, statusFilter, title) => {
       const reqs = sumFor(catId, monthIdx, statusFilter);
       if (reqs.length) setCellModal({ reqs, title });
     };
 
-    const CellPair = ({catId, m, plan, fact}) => (
-      <td className="border border-gray-200 p-0 text-right align-top" style={{minWidth:80}}>
-        {plan > 0 && (
-          <div className="px-2 py-0.5 text-[11px] text-amber-700 cursor-pointer hover:bg-amber-50 border-b border-gray-100"
-               onClick={()=>openCell(catId,m,['new','manager','approved'],`${MONTHS_SHORT[m]} — план`)}>
-            {fmt(plan)}
+    // Single cell per month: budget (editable) / plan / fact / deviation
+    const MonthCell = ({catId, m, budget, plan, fact}) => {
+      const isEditing = editCell?.catId===catId && editCell?.m===m;
+      const dev = budget>0 ? fact-budget : null;
+      return (
+        <td className="border border-gray-100 p-0 align-top" style={{minWidth:90}}>
+          {/* Budget row — editable for management */}
+          <div className="border-b border-blue-100 text-right" style={{background:'#EFF6FF'}}>
+            {isManagement ? (
+              isEditing ? (
+                <input autoFocus type="number"
+                       className="w-full px-1.5 py-0.5 text-[11px] text-blue-800 bg-blue-50 border-0 outline-none text-right"
+                       defaultValue={budget||''}
+                       onBlur={e=>{ saveBudgetCell(catId,m,e.target.value); setEditCell(null); }}
+                       onKeyDown={e=>{ if(e.key==='Enter'||e.key==='Escape') e.target.blur(); }}/>
+              ) : (
+                <div className="px-2 py-0.5 text-[11px] text-blue-700 cursor-pointer hover:bg-blue-100"
+                     title="Нажмите чтобы ввести бюджет"
+                     onClick={()=>setEditCell({catId,m,val:budget})}>
+                  {budget>0 ? fmt(budget) : <span className="text-blue-200">+бюджет</span>}
+                </div>
+              )
+            ) : (
+              <div className="px-2 py-0.5 text-[11px] text-blue-700">
+                {budget>0 ? fmt(budget) : <span className="text-gray-200">—</span>}
+              </div>
+            )}
           </div>
-        )}
-        {fact > 0 && (
-          <div className="px-2 py-0.5 text-[11px] text-green-700 cursor-pointer hover:bg-green-50"
-               onClick={()=>openCell(catId,m,['paid'],`${MONTHS_SHORT[m]} — факт`)}>
-            {fmt(fact)}
+          {/* Plan */}
+          <div className="border-b border-amber-100 text-right" style={{background: plan>0?'#FFFBEB':'transparent'}}>
+            {plan>0 ? (
+              <div className="px-2 py-0.5 text-[11px] text-amber-700 cursor-pointer hover:bg-amber-100"
+                   onClick={()=>openCell(catId,m,PLAN_ST,`${MONTHS_SHORT[m]} · план`)}>
+                {fmt(plan)}
+              </div>
+            ) : <div className="px-2 py-0.5 text-[11px] text-gray-200">—</div>}
           </div>
-        )}
-        {!plan && !fact && <span className="px-2 text-[11px] text-gray-300">—</span>}
-      </td>
-    );
-
-    const TotalCell = ({plan, fact}) => (
-      <td className="border border-gray-200 px-2 py-1 text-right font-semibold" style={{background:'#F8F9FA', minWidth:90}}>
-        {plan>0 && <div className="text-[11px] text-amber-700">{fmt(plan)}</div>}
-        {fact>0 && <div className="text-[11px] text-green-700">{fmt(fact)}</div>}
-        {!plan&&!fact && <span className="text-[11px] text-gray-300">—</span>}
-      </td>
-    );
+          {/* Fact */}
+          <div className="border-b border-green-100 text-right" style={{background: fact>0?'#F0FDF4':'transparent'}}>
+            {fact>0 ? (
+              <div className="px-2 py-0.5 text-[11px] text-green-700 cursor-pointer hover:bg-green-100"
+                   onClick={()=>openCell(catId,m,FACT_ST,`${MONTHS_SHORT[m]} · факт`)}>
+                {fmt(fact)}
+              </div>
+            ) : <div className="px-2 py-0.5 text-[11px] text-gray-200">—</div>}
+          </div>
+          {/* Deviation fact vs budget */}
+          <div className="text-right px-2 py-0.5 text-[10px]">
+            {dev!==null
+              ? <span style={{color:dev<=0?'#15803D':'#CF0000'}}>{dev>0?'+':''}{dev.toLocaleString('ru-RU')}</span>
+              : <span className="text-gray-200">—</span>}
+          </div>
+        </td>
+      );
+    };
 
     return (
-      <div className="overflow-x-auto rounded-2xl border border-gray-200 shadow-sm">
-        <table className="w-full text-sm border-collapse" style={{minWidth:900}}>
-          <thead>
-            <tr style={{background:'#4D295D'}}>
-              <th className="text-left text-white text-xs font-semibold px-4 py-3 border-r border-purple-700 sticky left-0 z-10" style={{background:'#4D295D', minWidth:160}}>
-                Статья расходов
-              </th>
-              {MONTHS_SHORT.map((m,i) => (
-                <th key={i} className="text-center text-white text-xs font-semibold px-2 py-3 border-r border-purple-700" style={{minWidth:80}}>
-                  {m}
+      <div>
+        {isManagement && (
+          <div className="flex items-center gap-2 mb-3 p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-700">
+            ✏️ <strong>Бюджет (синие ячейки)</strong> — кликните на ячейку чтобы ввести плановую сумму. Данные сохраняются автоматически.
+          </div>
+        )}
+        <div className="overflow-x-auto rounded-2xl border border-gray-200 shadow-sm">
+          <table className="w-full text-sm border-collapse" style={{minWidth:1000}}>
+            <thead>
+              <tr style={{background:'#4D295D'}}>
+                <th className="text-left text-white text-xs font-semibold px-3 py-3 border-r border-purple-800 sticky left-0 z-10" style={{background:'#4D295D', minWidth:200}}>
+                  Статья расходов (ДДС)
                 </th>
-              ))}
-              <th className="text-center text-white text-xs font-semibold px-3 py-3" style={{minWidth:90}}>ИТОГО</th>
-            </tr>
-            <tr style={{background:'#6B3F7A'}}>
-              <th className="text-left text-purple-200 text-[10px] px-4 py-1 sticky left-0" style={{background:'#6B3F7A'}}>
-                <span className="text-amber-300">■</span> план &nbsp; <span className="text-green-300">■</span> факт
-              </th>
-              {Array.from({length:13}).map((_,i)=>(
-                <th key={i} className="border-r border-purple-700 py-1"/>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 && (
-              <tr><td colSpan={14} className="text-center text-gray-400 py-10 text-sm">Нет заявок за {viewYear} год</td></tr>
-            )}
-            {rows.map(({cat, planMonths, factMonths, planTotal, factTotal}) => (
-              <tr key={cat.id} className="hover:bg-purple-50/30 transition-colors">
-                <td className="border border-gray-200 px-3 py-2 text-xs font-medium text-gray-700 sticky left-0 bg-white" style={{minWidth:160}}>
-                  {cat.icon} {cat.label}
-                </td>
-                {Array.from({length:12},(_,m) => (
-                  <CellPair key={m} catId={cat.id} m={m} plan={planMonths[m]} fact={factMonths[m]}/>
+                {MONTHS_SHORT.map((m,i)=>(
+                  <th key={i} className="text-center text-white text-xs font-semibold px-1 py-3 border-r border-purple-800" style={{minWidth:80}}>{m}</th>
                 ))}
-                <TotalCell plan={planTotal} fact={factTotal}/>
+                <th className="text-center text-white text-xs font-semibold px-2 py-3" style={{minWidth:90}}>ИТОГО</th>
               </tr>
-            ))}
-          </tbody>
-          <tfoot>
-            <tr style={{background:'#F3F4F6'}}>
-              <td className="border border-gray-300 px-3 py-2 text-xs font-bold text-gray-900 sticky left-0" style={{background:'#F3F4F6'}}>
-                ИТОГО РАСХОДОВ
-              </td>
-              {Array.from({length:12},(_,m)=>(
-                <td key={m} className="border border-gray-300 px-2 py-2 text-right">
-                  {colPlan[m]>0 && <div className="text-[11px] text-amber-700 font-semibold">{fmt(colPlan[m])}</div>}
-                  {colFact[m]>0 && <div className="text-[11px] text-green-700 font-semibold">{fmt(colFact[m])}</div>}
-                  {!colPlan[m]&&!colFact[m] && <span className="text-[11px] text-gray-300">—</span>}
-                </td>
+              <tr style={{background:'#5C3070'}}>
+                <th className="px-3 py-1 text-left sticky left-0 text-[10px] font-normal" style={{background:'#5C3070'}}>
+                  <span style={{color:'#93C5FD'}}>■ бюджет</span> &nbsp;
+                  <span style={{color:'#FCD34D'}}>■ план</span> &nbsp;
+                  <span style={{color:'#86EFAC'}}>■ факт</span> &nbsp;
+                  <span style={{color:'#FCA5A5'}}>± откл</span>
+                </th>
+                {Array.from({length:13}).map((_,i)=><th key={i} className="border-r border-purple-800 py-1"/>)}
+              </tr>
+            </thead>
+            <tbody>
+              {Object.entries(groups).map(([groupName, groupRows]) => (
+                <React.Fragment key={groupName}>
+                  <tr style={{background:'#F0EBF4'}}>
+                    <td colSpan={14} className="px-3 py-1.5 text-xs font-bold text-purple-800 sticky left-0" style={{background:'#F0EBF4'}}>
+                      {groupName}
+                    </td>
+                  </tr>
+                  {groupRows.map(({cat,budgetMonths,planMonths,factMonths,budgetTotal,planTotal,factTotal})=>(
+                    <tr key={cat.id} className="hover:bg-gray-50/60 transition-colors">
+                      <td className="border border-gray-100 px-3 sticky left-0 bg-white align-middle" style={{minWidth:200}}>
+                        <div className="text-xs text-gray-700 py-1 leading-tight">{cat.label}</div>
+                      </td>
+                      {Array.from({length:12},(_,m)=>(
+                        <MonthCell key={m} catId={cat.id} m={m}
+                          budget={budgetMonths[m]} plan={planMonths[m]} fact={factMonths[m]}/>
+                      ))}
+                      <td className="border border-gray-100 p-0 text-right" style={{background:'#F8F9FA', minWidth:90}}>
+                        <div className="px-2 py-0.5 text-[11px] text-blue-700 border-b border-gray-100">{budgetTotal>0?fmt(budgetTotal):'—'}</div>
+                        <div className="px-2 py-0.5 text-[11px] text-amber-700 border-b border-gray-100">{planTotal>0?fmt(planTotal):'—'}</div>
+                        <div className="px-2 py-0.5 text-[11px] text-green-700 border-b border-gray-100">{factTotal>0?fmt(factTotal):'—'}</div>
+                        <div className="px-2 py-0.5 text-[10px]">
+                          {budgetTotal>0&&factTotal>0
+                            ? <span style={{color:factTotal<=budgetTotal?'#15803D':'#CF0000'}}>{Math.round(factTotal/budgetTotal*100)}%</span>
+                            : <span className="text-gray-200">—</span>}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </React.Fragment>
               ))}
-              <td className="border border-gray-300 px-2 py-2 text-right">
-                {grandPlan>0 && <div className="text-[11px] text-amber-700 font-bold">{fmt(grandPlan)}</div>}
-                {grandFact>0 && <div className="text-[11px] text-green-700 font-bold">{fmt(grandFact)}</div>}
-              </td>
-            </tr>
-            <tr style={{background:'#FEF9C3'}}>
-              <td className="border border-gray-300 px-3 py-2 text-xs font-bold text-amber-800 sticky left-0" style={{background:'#FEF9C3'}}>
-                ИСПОЛНЕНИЕ, %
-              </td>
-              {Array.from({length:12},(_,m)=>(
-                <td key={m} className="border border-gray-300 px-2 py-2 text-center text-[11px] font-semibold">
-                  {colPlan[m]>0
-                    ? <span style={{color: colFact[m]/colPlan[m]>=1?'#15803D':colFact[m]/colPlan[m]>=0.5?'#92400E':'#CF0000'}}>
-                        {Math.round(colFact[m]/colPlan[m]*100)}%
-                      </span>
-                    : <span className="text-gray-300">—</span>}
+            </tbody>
+            <tfoot>
+              <tr style={{background:'#E8E0F0'}}>
+                <td className="border border-gray-300 px-3 py-0 text-xs font-bold text-purple-900 sticky left-0" style={{background:'#E8E0F0'}}>
+                  <div className="py-0.5 border-b border-purple-200 text-blue-800">ИТОГО · бюджет</div>
+                  <div className="py-0.5 border-b border-purple-200 text-amber-800">ИТОГО · план</div>
+                  <div className="py-0.5 border-b border-purple-200 text-green-800">ИТОГО · факт</div>
+                  <div className="py-0.5 text-purple-700">исполнение %</div>
                 </td>
-              ))}
-              <td className="border border-gray-300 px-2 py-2 text-center text-[11px] font-bold">
-                {grandPlan>0
-                  ? <span style={{color:grandFact/grandPlan>=1?'#15803D':grandFact/grandPlan>=0.5?'#92400E':'#CF0000'}}>
-                      {Math.round(grandFact/grandPlan*100)}%
-                    </span>
-                  : '—'}
-              </td>
-            </tr>
-          </tfoot>
-        </table>
+                {Array.from({length:12},(_,m)=>(
+                  <td key={m} className="border border-gray-300 p-0 text-right" style={{background:'#E8E0F0'}}>
+                    <div className="px-2 py-0.5 text-[11px] text-blue-700 font-semibold border-b border-purple-200" style={{background:'#EFF6FF'}}>
+                      {colBudget[m]>0?fmt(colBudget[m]):<span className="text-gray-300">—</span>}
+                    </div>
+                    <div className="px-2 py-0.5 text-[11px] text-amber-700 font-semibold border-b border-purple-200">
+                      {colPlan[m]>0?fmt(colPlan[m]):<span className="text-gray-300">—</span>}
+                    </div>
+                    <div className="px-2 py-0.5 text-[11px] text-green-700 font-semibold border-b border-purple-200">
+                      {colFact[m]>0?fmt(colFact[m]):<span className="text-gray-300">—</span>}
+                    </div>
+                    <div className="px-2 py-0.5 text-[11px] font-bold text-center">
+                      {colBudget[m]>0
+                        ? <span style={{color:colFact[m]<=colBudget[m]?'#15803D':colFact[m]/colBudget[m]<=1.1?'#92400E':'#CF0000'}}>
+                            {Math.round(colFact[m]/colBudget[m]*100)}%
+                          </span>
+                        : colFact[m]>0?<span className="text-red-400 text-[10px]">нет бюдж</span>
+                        : <span className="text-gray-300">—</span>}
+                    </div>
+                  </td>
+                ))}
+                <td className="border border-gray-300 p-0 text-right font-bold" style={{background:'#D8C8E8'}}>
+                  <div className="px-2 py-0.5 text-[11px] text-blue-700 border-b border-purple-300" style={{background:'#DBEAFE'}}>{grandBudget>0?fmt(grandBudget):'—'}</div>
+                  <div className="px-2 py-0.5 text-[11px] text-amber-700 border-b border-purple-300">{grandPlan>0?fmt(grandPlan):'—'}</div>
+                  <div className="px-2 py-0.5 text-[11px] text-green-700 border-b border-purple-300">{grandFact>0?fmt(grandFact):'—'}</div>
+                  <div className="px-2 py-0.5 text-[11px] text-center">
+                    {grandBudget>0
+                      ? <span style={{color:grandFact<=grandBudget?'#15803D':'#CF0000'}}>{Math.round(grandFact/grandBudget*100)}%</span>
+                      : '—'}
+                  </div>
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
       </div>
     );
   };
@@ -3183,7 +3324,8 @@ function App() {
           onEdit={(req) => { setEditingReq(req); setActiveTab('form'); }} />
       )}
       {activeTab==='calendar' && (
-        <PaymentCalendarView requests={requests} user={user} settings={settings} />
+        <PaymentCalendarView requests={requests} user={user} settings={settings}
+          onSaveSettings={s=>{ setSettings(s); saveSettings(s); }} />
       )}
       {activeTab==='settings' && ['manager','admin','treasurer'].includes(user.role) && (
         <SettingsView settings={settings} setSettings={s=>{ setSettings(s); saveSettings(s); }}
