@@ -2202,7 +2202,7 @@ function NewRequestForm({ user, requests, onSubmit, settings, editingReq, onSave
                       }}
                       className="input-field">
                 <option value="">— Выберите филиал —</option>
-                {(cfg.branches.filter(b=>b!=='Головной офис')).map(b=><option key={b} value={b}>{b}</option>)}
+                {cfg.branches.map(b=><option key={b} value={b}>{b}</option>)}
               </select>
               {errors.branch && <p className="text-xs text-red-500 mt-1">{errors.branch}</p>}
             </div>
