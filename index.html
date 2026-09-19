@@ -292,8 +292,12 @@ const sbSave = async (requests) => {
 const sbUpsertOne = async (req) => {
   try {
     const { error } = await sb.from('requests').upsert({ id: req.id, data: req, updated_at: new Date().toISOString() });
-    if (error) console.error('[Supabase upsert error]', error);
-  } catch(e) { console.error('[Supabase upsert exception]', e); }
+    if (error) {
+      console.error('[Supabase upsert error]', error);
+      return false;
+    }
+    return true;
+  } catch(e) { console.error('[Supabase upsert exception]', e); return false; }
 };
 
 const sbDelete = async (id) => {
@@ -2599,15 +2603,19 @@ function App() {
     showToast('Заявка удалена', 'success');
   };
 
-  const addRequest = (req, isDup) => {
+  const addRequest = async (req, isDup) => {
     const newList = [...requests, req];
     setRequests(newList);
     lsSave(newList);
-    sbUpsertOne(req);
-    dispatchWANotifications(req, null, waContacts);
-    showToast(isDup
-      ? `Заявка ${req.id} отправлена (обнаружен возможный дубликат — DUP)`
-      : `Заявка ${req.id} успешно отправлена на согласование`, isDup?'info':'success');
+    const saved = await sbUpsertOne(req);
+    if (!saved) {
+      showToast(`⚠️ Заявка сохранена локально, но НЕ отправлена в базу данных. Проверьте настройки Supabase RLS.`, 'error');
+    } else {
+      dispatchWANotifications(req, null, waContacts);
+      showToast(isDup
+        ? `Заявка ${req.id} отправлена (обнаружен возможный дубликат — DUP)`
+        : `Заявка ${req.id} успешно отправлена на согласование`, isDup?'info':'success');
+    }
     setActiveTab(['manager','admin','treasurer'].includes(user.role) ? 'dashboard' : 'my');
   };
 
