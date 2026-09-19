@@ -108,6 +108,20 @@ const USERS = [
 
 const BRANCHES = ['Офис', 'Платинум', 'Бокейхана', 'Мангилик Ел', 'Наурызбай батыра', 'Розыбакиева', 'Павлодар', 'Тауелсыздык', 'Караганда', 'Семей'];
 
+const BRANCH_ABBR = {
+  'Головной офис':   'ГО',
+  'Офис':            'ОФ',
+  'Платинум':        'ПЛТ',
+  'Бокейхана':       'БОК',
+  'Мангилик Ел':     'МЕЛ',
+  'Наурызбай батыра':'НБ',
+  'Розыбакиева':     'РОЗ',
+  'Павлодар':        'ПВЛ',
+  'Тауелсыздык':     'ТАУ',
+  'Караганда':       'КРГ',
+  'Семей':           'СЕМ',
+};
+
 const CATEGORIES = [
   { id: 'rent',      label: 'Аренда',         icon: '🏢' },
   { id: 'suppliers', label: 'Поставщики',      icon: '📦' },
@@ -2036,9 +2050,10 @@ function NewRequestForm({ user, requests, onSubmit, settings, editingReq, onSave
   const isEditing = !!editingReq;
   const [step, setStep] = useState(1);
 
-  const genRequestName = () => {
+  const genRequestName = (branch) => {
     const year = new Date().getFullYear();
-    const prefix = `НАЛ-${year}-`;
+    const abbr = BRANCH_ABBR[branch] || 'ФЛ';
+    const prefix = `НАЛ-${abbr}-${year}-`;
     const maxNum = requests
       .filter(r => r.type === 'advance' && (r.requestName||'').startsWith(prefix))
       .reduce((max, r) => {
@@ -2050,7 +2065,8 @@ function NewRequestForm({ user, requests, onSubmit, settings, editingReq, onSave
 
   const [form, setForm] = useState(() => {
     if (editingReq) return { ...editingReq };
-    return { ...EMPTY_FORM, branch: user.loginBranch || '', initiatorName: user.name, initiatorPosition: user.position, recipient: user.name, requestName: genRequestName() };
+    const initBranch = user.loginBranch || '';
+    return { ...EMPTY_FORM, branch: initBranch, initiatorName: user.name, initiatorPosition: user.position, recipient: user.name, requestName: genRequestName(initBranch) };
   });
   const [errors, setErrors] = useState({});
   const [dupWarning, setDupWarning] = useState('');
@@ -2211,6 +2227,7 @@ function NewRequestForm({ user, requests, onSubmit, settings, editingReq, onSave
                         const stillInBranch = getBranchUsers(newBranch, cfg).some(u=>u.name===form.initiatorName);
                         set('branch', newBranch);
                         if (!stillInBranch) { set('initiatorName', ''); set('initiatorPosition', ''); }
+                        if (!isEditing) set('requestName', genRequestName(newBranch));
                         setErrors(er=>({...er, branch:'', initiatorName:''}));
                       }}
                       className="input-field">
