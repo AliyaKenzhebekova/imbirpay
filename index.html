@@ -2138,7 +2138,7 @@ function NewRequestForm({ user, requests, onSubmit, settings, editingReq, onSave
       const hashBuf = await crypto.subtle.digest('SHA-256', buf);
       const hash = Array.from(new Uint8Array(hashBuf)).map(b=>b.toString(16).padStart(2,'0')).join('');
       set('fileHash', hash);
-      const dupByHash = requests.find(r=>r.fileHash===hash && ACTIVE_STATUSES.includes(r.status));
+      const dupByHash = requests.find(r=>r.fileHash===hash);
       if (dupByHash) {
         setDupWarning(`⚠️ Файл с идентичным содержимым уже зарегистрирован в заявке ${dupByHash.requestName||dupByHash.id} (${dupByHash.initiatorName})`);
       } else {
@@ -2186,7 +2186,7 @@ function NewRequestForm({ user, requests, onSubmit, settings, editingReq, onSave
 
     const ACTIVE = ['new','manager','approved'];
     const existingDup = form.type==='invoice'
-      ? requests.find(r=>ACTIVE.includes(r.status) && (
+      ? requests.find(r=>(
           (form.fileHash && r.fileHash && r.fileHash===form.fileHash) ||
           (!form.fileHash && r.fileName===form.fileName)
         ))
@@ -2572,8 +2572,10 @@ function NewRequestForm({ user, requests, onSubmit, settings, editingReq, onSave
                 <div><span className="font-medium text-gray-700">Статус:</span> {
                   dupModal.existingReq.status==='new'?'Новая':
                   dupModal.existingReq.status==='manager'?'У руководителя':
-                  dupModal.existingReq.status==='approved'?'Одобрена':'—'
+                  dupModal.existingReq.status==='approved'?'Одобрена':
+                  dupModal.existingReq.status==='paid'?'Оплачена':'—'
                 }</div>
+                <div><span className="font-medium text-gray-700">Филиал:</span> {dupModal.existingReq.branch}</div>
                 <div><span className="font-medium text-gray-700">Дата:</span> {new Date(dupModal.existingReq.createdAt).toLocaleDateString('ru-RU')}</div>
               </div>
               <p className="text-xs text-gray-500 text-center mb-5">Чтобы избежать путаницы у казначея, рекомендуем отменить отправку.</p>
